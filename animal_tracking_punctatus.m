@@ -1,20 +1,19 @@
-
-%%%% Get data from animal tracks using dung track
+%%%%% Get data from animal tracks using dung track
 % Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena
 % Gets complete track from each set of trials, makes a plot and uses 
 %Initial Direction Analysis to visualize the initial directions of
 % purpuratus relative to stimuli of different size John Kirwan Sep 2015
-clear all
 
 %%  
 % data_folder = uigetdir('C:\'); addpath(data_folder) ;   %bring in the dataset with UI         
-subfolder = '\Tracks\';     % or manually
-file_folder = (strcat('C:\Users\john\Pictures\GoPro',subfolder));
+subfolder = '\milli_trials\';     % or manually
+file_folder = (strcat('C:\Users\john\Pictures\',subfolder));
 
 %% and the files
-video_name = '001';
-animal_track = importdata(strcat(file_folder,'trial',video_name,'_point02.txt')); %tracks of animal throughout trial
-landmarks = importdata(strcat(file_folder,'trial',video_name,'_point01.txt')); %origin and stimulus demarcation
+
+video_name = '50_36';
+animal_track = importdata(strcat(file_folder,video_name,'_point02.txt')); %tracks of animal throughout trial
+landmarks = importdata(strcat(file_folder,video_name,'_point01.txt')); %origin and stimulus demarcation
 
 % add CircStat to path
 addpath('C:/Users/john/Documents/MATLAB/Apps/CircStat/')
@@ -37,16 +36,28 @@ trial_limits = get_trial_limits(landmarks, animal_track);
 % divide the animal tracks up by trial using the first landmark
 trackz = get_animal_pos(trial_limits,animal_track) ;
 
+% new line to limit length of trial to 5 mins (61 tracks) - for first trial
+% in video (not yet generalized)
+% if  size(trackz{1},1) > 61
+%     trackz = {trackz{1}(1:61,:)};
+% end
+
 tranz_trackz = trackz_transform(trackz,trial_limits) ; % transform coords to origin and stimulus
 
-% check that animal tracks start below 0.25 and increase
-
+% check that the animal leaves the centre of the the arena
+furthest_point = max(tranz_trackz{1,1}(:,2));
+goes_away = 1;
+if furthest_point < 0.35   %% modified from 0.4, was a bit strict
+    warning('Animal doesn''t leave centre 35%% of arena')
+    goes_away = 0;
+end
+    
 %%
 % get animal track points closest to rho of 0.25 and 0.5 for each trial
 circleValues = zeros([size(trial_limits, 1) 4])    ;
 
 i = 1; 
-while i <= size(trial_limits, 1) ;
+while i <= size(trial_limits, 1) 
 
  [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.25))   ;
  circleValues(i,1:2) = tranz_trackz{i}(index, 1:2) ;
@@ -66,6 +77,9 @@ which_intersect  = zeros([num_trials 1]) ;
 
 %%%JS: The next section was a bit hard to follow, so I cleaned it up a bit
 
+% ERRORS occur below if wrong direction
+
+try
 for i = 1:num_trials
 
     [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
@@ -95,7 +109,8 @@ for i = 1:num_trials
     [~, which_intersect(i)] = min(dist_to_track);
 
 end
- 
+
+
 %%
 %get angle for animal in each trial in degrees and put it in animal_angle
 animal_radian = zeros([num_trials 1]) ;
@@ -120,6 +135,13 @@ for i = 1:num_trials
 end
 
 
+
+catch
+    
+ animal_radian = NaN;
+    
+end    
+
 %%
 %get the intersect of the tracks with the arena edge
 %get_track_intersect(landmarks,animal_track) ;
@@ -130,18 +152,27 @@ end
 % 
 % trials_angle_mean = zeros([3 1]);
 % [mu ul ll] = circ_mean(animal_radian, [], 2) ;
-figure;
-circ_labels = num2str(1:length(animal_radian));
-directions = circ_plot(animal_radian);
+% figure;
+% circ_labels = num2str(1:length(animal_radian));
+% directions = circ_plot(animal_radian);
 %tracks = circ_plot();
       
       
 %%
 %create csv output with trial number, position and direction in columns
-animal_radian_col(:,1) = animal_radian' ;
-animal_radian_col(:,2) = rad2deg(animal_radian') ;
 
-C = {video_name, animal_radian_col(:,1), animal_radian_col(:,2)} ;
-S = [video_name,'_directions.csv'];
-csvwrite(S,animal_radian_col) 
+temp_array = {video_name, animal_radian',...
+    rad2deg(animal_radian'), goes_away, circleValues(1), circleValues(2)};
+
+if exist('C', 'var')
+    C = vertcat(C, temp_array);
+else
+    C = temp_array;
+end
+
+T = cell2table(C);
+
+cd('C:/Users/john/Pictures/milli_trials/')
+writetable(T,'calib_punctatus_directions_prelim2.txt')
+
 
