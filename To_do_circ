@@ -1,0 +1,7 @@
+
+
+# If multiple trials (num_trials < 1) in one file, run whole thing several times.
+
+One file to run tracking on name string, landmarks, points and append
+One file to pass matrices to that function
+One file to automate the whole thing for entire directory
