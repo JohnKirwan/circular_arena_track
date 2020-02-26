@@ -2,7 +2,7 @@
 % script to plot animal tracks overlaid in matlab
 % John Kirwan April 2016
 
-%% %%set corresponding colors
+%% set corresponding colors
 colorVec = [0, 0.4470, 0.7410; 0.8500, 0.3250, 0.0980; 0.9290, 0.6940, 0.1250;
     0.4940, 0.1840, 0.5560; 0.4660, 0.6740, 0.1880; 0.3010, 0.7450, 0.9330; 0.6350, 0.0780, 0.1840;
     1 ,1, 0; 1, 0, 1; 0, 1, 1; 1, 0, 0; 0, 1, 0; 0, 0, 1 ] ;
@@ -12,6 +12,7 @@ colorVec = [colorVec; colorVec; colorVec; colorVec; colorVec] ;
 
 file_folder = (strcat(pwd,'\')); % get all text files from the working directory
 cd(file_folder)
+
 landmark_files = dir('*_point01.txt');
 track_files = dir('*_point02.txt');
 
@@ -20,7 +21,7 @@ track_files = dir('*_point02.txt');
     end
 
 
-    
+
 %% make the output csv file here
 % mkdir(file_folder,'track_results');                      %make folder for output file
 results = [];  file = [];  i = 1;
@@ -49,4 +50,3 @@ writetable(T,'headings.csv','WriteRowNames',true)
 
 %%
 % add section to include stimulus heading in output
-
