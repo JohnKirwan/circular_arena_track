@@ -4,21 +4,22 @@
 % Gets complete track from each set of trials, makes a plot and uses 
 %Initial Direction Analysis to visualize the initial directions of
 % purpuratus relative to stimuli of different size John Kirwan Sep 2015
-clear all
+
+% Can 'clear all' beforehand if required
 
 %%  
-% data_folder = uigetdir('C:\'); addpath(data_folder) ;   %bring in the dataset with UI         
-subfolder = '\Tracks\';     % or manually
-file_folder = (strcat('C:\Users\john\Pictures\GoPro',subfolder));
+%data_folder = uigetdir('C:\'); addpath(data_folder) ;   %bring in the dataset with UI         
+subfolder = '';     % or manually
+file_folder = (strcat('C:\Users\seano\Documents\2021\circular_arena_track',subfolder));
 
 %% and the files
-video_name = '001';
-animal_track = importdata(strcat(file_folder,'trial',video_name,'_point02.txt')); %tracks of animal throughout trial
-landmarks = importdata(strcat(file_folder,'trial',video_name,'_point01.txt')); %origin and stimulus demarcation
+video_name = 'GOPR0210';
+animal_track = importdata(strcat(file_folder,'\',video_name,'_point02.txt')); %tracks of animal throughout trial
+landmarks    = importdata(strcat(file_folder,'\',video_name,'_point01.txt')); %origin and stimulus demarcation
 
 % add CircStat to path
-addpath('C:/Users/john/Documents/MATLAB/Apps/CircStat/')
-addpath('C:/Users/john/Documents/MATLAB/thunderdome/')
+%addpath('C:/Users/john/Documents/MATLAB/Apps/CircStat/') % don't need this now
+%addpath('C:/Users/john/Documents/MATLAB/thunderdome/')
 
 if mod(size(landmarks, 1),2)  ~= 0           % warning if landmarks uneven
     error('odd number of landmarks') 
