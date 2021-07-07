@@ -21,7 +21,7 @@ library('circular')
 Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena. Gets complete track from each set of trials, makes a plot and determines headings.
 
 ```{r}
-folder <- 'D:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
+folder <- 'F:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
 filez  <- list.files(normalizePath(folder))
 # files_df  <- tibble(landmark=list.files(normalizePath(folder))[
 #                     grep('*point01.txt$',list.files(normalizePath(folder)))],
@@ -42,15 +42,15 @@ tail(files_df)
 ```{r}
 # are there any (predicted) track names not represented in the file list?
 # i.e. landmark files without a matching track file
-if(any(files_df$track    %in% list.files(normalizePath(folder)) == FALSE)){
+if(any(!files_df$track    %in% list.files(normalizePath(folder)))){
   stop(print(paste0("The following track file is missing:",
-    files_df$track[which(files_df$track %in% list.files(normalizePath(folder)) == FALSE)]
+    files_df$track[which(!files_df$track %in% list.files(normalizePath(folder)))]
                     )))
 }
 
 # are any track files in the file list without a match in the landmark files?
-if(any(list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
-           normalizePath(folder)))] %in% files_df$track == FALSE)){
+if(any(!list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
+           normalizePath(folder)))] %in% files_df$track)){
   stop(print(paste0("The following track file lacks a counterpart:",
     list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
       normalizePath(folder)))]
@@ -59,19 +59,19 @@ if(any(list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
 }
 ```
 
-
+Try with first file to get the track
 
 ```{r}
-num <- 2
-animal_track = read.delim(normalizePath(paste0(folder,'/',files_df$track[num])),
+animal_track = read.delim(normalizePath(paste0(folder,'/',files_df$track[1])),
                           sep="\t", header = FALSE)[,1:3]
 names(animal_track) <- c("frame","x","y")
 head(animal_track)
 ```
 
+Try with first file to get the landmarks
 
 ```{r}
-animal_landmark = read.delim(normalizePath(paste0(folder,'/',files_df$landmark[num])),
+animal_landmark = read.delim(normalizePath(paste0(folder,'/',files_df$landmark[1])),
                           sep="\t", header = FALSE)[,1:3]
 names(animal_landmark) <- c("frame","x","y")
 head(animal_landmark)
@@ -86,33 +86,23 @@ num_trials = length(animal_landmark$x)/2
 With the assignment pipe *%<>%*, the variable is assigned to itself at the end.
 
 ```{r}
-cart2rho <- function(x,y){
-  rho    <- sqrt(x^2 + y^2)
-  return(rho)
-}
-
-cart2theta <- function(x,y){
-  theta  <- atan2(y,x)
-  return(theta)
-}
-
 #function [trial_limits] = get_trial_limits(landmarks,animal_track)
-get_trial_limits <- function(landmarks,animal_track,file_tbl){ #,
+get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
 
   num_trials = dim(landmarks)[1]/2 # count number of trials
-#trial_limits = zeros([num_trials 11]); # pick out start frame and centre and stimulus coords
-  trial_limits <- array(dim=c(num_trials,12)) 
-  colnames(trial_limits) <- c(
+  #trial_limits = zeros([num_trials 11]); # pick out start frame and centre and stimulus coords
+  trial_limits <- as_tibble(array(0,dim=c(num_trials,12)))
+  
+ colnames(trial_limits) <- c(
     "first_f","orig_x","orig_y","stim_x","stim_y","last_f",
     "norm_stim_x","norm_stim_y","theta","rho","quadrant","video")
-#  trial_limits %>% mutate(across(.cols = everything(),as.numeric))
-  cols(trial_limits = col_number()) #make all numeric
+  trial_limits$video <- as.character(trial_limits$video)
   i = 1 
   
  while (i <= num_trials){ # for each trial
-     trial_limits[i, 1  ] <- as.numeric(landmarks[(i*2)-1,  1]) # trial i start frame
-     trial_limits[i, 2:3] <- as.numeric(landmarks[(i*2)-1,2:3]) # trial i centre point x and y
-     trial_limits[i, 4:5] <- as.numeric(landmarks[i*2,    2:3]) # trial i stimulus centre x and y
+   trial_limits[i, 1  ] <- as.numeric(landmarks[(i*2)-1,  1]) # trial i start frame
+   trial_limits[i, 2:3] <- as.list(as.numeric(landmarks[(i*2)-1,2:3])) # trial i centre pt x,y
+   trial_limits[i, 4:5] <- as.list(as.numeric(landmarks[i*2,    2:3])) # trial i stim centre x,y
     
      if (i < num_trials){
         trial_limits[i , 6] <- as.numeric(landmarks[((i+1)*2)-1,1] - 1)  # trial i last frame
@@ -121,12 +111,12 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl){ #,
        trial_limits[i , 6] = j[1]
      }
  
-     trial_limits[i , 7:8] <- as.numeric(trial_limits[i, 4:5] - trial_limits[i , 2:3]) 
+     trial_limits[i , 7:8] <- as.list(as.numeric(trial_limits[i, 4:5] - trial_limits[i , 2:3])) 
      # normalised stimulus centre in cartesian terms relative to centre of arena
 
      #[theta1 , rho1] = cart2pol(trial_limits[i , 7], trial_limits[i,8]); 
-     theta1 = atan2(trial_limits[i,8],trial_limits[i , 7]) # polars for stimulus centre
-     rho1   = sqrt(trial_limits[i , 7]^2 + trial_limits[i,8]^2)
+     theta1 = atan2(trial_limits[[i,8]],trial_limits[[i , 7]]) # polars for stimulus centre
+     rho1   = sqrt(trial_limits[[i, 7]]^2 + trial_limits[[i,8]]^2)
      
      theta1 = theta1 + pi/2; # set to conventional degree values with 0 at top and clockwise
      if (theta1 < 0){        
@@ -147,8 +137,7 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl){ #,
     }else if (trial_limits[i , 9] >= 1.25*pi & trial_limits[i , 9] < 1.75*pi ){
         trial_limits[i , 11] <- 4;
     }
-    print(file_tbl[i,1])
-    trial_limits[i, 12]      <- file_tbl[[i,1]];
+    trial_limits[i, 12]      <- file_tbl[[vid_num,1]];
     i = i + 1 
  }
  return(trial_limits)
@@ -160,8 +149,10 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl){ #,
 # (vii - viii) normalised stimulus centre (ix) theta in rads (anticlock,
 # zero=0) (x) rho in pixels 
 
+Get limits from first video
+
 ```{r}
-trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df) #
+trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df,1) #
 ```
 
 
@@ -173,15 +164,14 @@ get_animal_pos <- function(trial_limits,animal_track){
   
   # make nested tibble of the sets
   trackz <- purrr::map(vector(length=num_trials), tibble)
-  #colnames(trackz) <- c("video","trial","frame","x","y")
-  #trackz[,1]       <- animal_landmark[1]
 
  i <- 1 # initialize i  
- while (i <= dim(trial_limits)[1]){     
-   animal_track$trial_num[ animal_track$frame >= trial_limits[i,1] & 
-        animal_track$frame <= trial_limits[i,6] ] <- i
-   XY <- as_tibble(animal_track[animal_track$frame >= trial_limits[i,1] & 
-           animal_track$frame <= trial_limits[i,6],])
+ while (i <= dim(trial_limits)[1]){    # for each trial in a video 
+   animal_track$trial_num[ animal_track$frame >= trial_limits[[i,1]] & 
+        animal_track$frame <= trial_limits[[i,6]] ] <- i # get the trial no for each obs
+   XY <- as_tibble(animal_track[animal_track$frame >= trial_limits[[i,1]] & 
+           animal_track$frame <= trial_limits[[i,6]],]) # make a tibble of that trial
+   #XY[,5] <- trial_limits[[i,12]]
    trackz[[i]] <- XY
    i = i + 1
  }
@@ -199,15 +189,39 @@ tail(trackz[[1]])
 Now apply this to all files.
 
 ```{r}
-# for all files in files_df
-
-# run get_animal_pos
-
-# append / cbind into megatibble
-
-# return megatibble
+get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
+  # for all files in files_df
+  i <- 1
+  while(i <= dim(files_df)[1]){
+    animal_track = read.delim(normalizePath(paste0(folder,'/',files_df$track[i])),
+                            sep="\t", header = FALSE)[,1:3]
+    names(animal_track) <- c("frame","x","y")
+  
+    animal_landmark = read.delim(normalizePath(paste0(folder,'/',
+                      files_df$landmark[i])),sep="\t", header = FALSE)[,1:3]
+    names(animal_landmark) <- c("frame","x","y")
+    if(length(animal_landmark$x) %% 2 == 1){ warning("Odd number of landmarks!") }
+  
+    trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df,i) #
+  
+    # run get_animal_pos
+    if(i == 1){  
+      all_trackz <- get_animal_pos(trial_limits,animal_track) # populate with first list
+    } else {
+      all_trackz <- c(all_trackz,get_animal_pos(trial_limits,animal_track))  
+      }
+    i <- i + 1
+  }
+ return(all_trackz)
+}
 ```
 
+
+
+```{r}
+all_trackz <- get_all_animal_pos(animal_landmark,animal_track,files_df)
+str(all_trackz)
+```
 
 Then make a function which tranforms the coords from all subtibbles
 
@@ -361,6 +375,21 @@ animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
 # C = {video_name, animal_radian_col[:,1], animal_radian_col[:,2]} ;
 write_csv(animal_radian_col, paste0(video_name,''_directions.csv')
 ```
+
+
+
+
+
+
+cart2rho <- function(x,y){
+  rho    <- sqrt(x^2 + y^2)
+  return(rho)
+}
+
+cart2theta <- function(x,y){
+  theta  <- atan2(y,x)
+  return(theta)
+}
 
 
 
