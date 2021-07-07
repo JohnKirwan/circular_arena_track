@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r message=FALSE, warning=FALSE}
 library('tidyverse')
+library('magrittr')
 library('circular')
 ```
 
@@ -22,12 +23,43 @@ Uses stimulus centre and point opposite stimulus centre as markers for the unit 
 ```{r}
 folder <- 'D:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
 filez  <- list.files(normalizePath(folder))
-files_df  <- tibble(landmark=list.files(normalizePath(folder))[
-                    grep('*point01.txt$',list.files(normalizePath(folder)))],
-                    track=list.files(normalizePath(folder))[
-                      grep('*point02.txt$',list.files(normalizePath(folder)))])
+# files_df  <- tibble(landmark=list.files(normalizePath(folder))[
+#                     grep('*point01.txt$',list.files(normalizePath(folder)))],
+#                     track=list.files(normalizePath(folder))[
+#                       grep('*point02.txt$',list.files(normalizePath(folder)))])
+
+files_df <- tibble(basename=sub("*_point01.txt", "",  #subset string before exp
+                     list.files(normalizePath(folder))[
+                     grep('*point01.txt$',list.files(normalizePath(folder)))]))
+
+files_df %<>% mutate(landmark=paste0(basename,"_point01.txt"),
+                    track    =paste0(basename,"_point02.txt"))
+
 tail(files_df)
 ```
+
+
+```{r}
+# are there any (predicted) track names not represented in the file list?
+# i.e. landmark files without a matching track file
+if(any(files_df$track    %in% list.files(normalizePath(folder)) == FALSE)){
+  stop(print(paste0("The following track file(s) are missing:",
+    files_df$track[which(files_df$track %in% list.files(normalizePath(folder)) == FALSE)]
+                    )))
+}
+
+# are any track files in the file list without a match in the landmark files?
+if(any(list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
+           normalizePath(folder)))] %in% files_df$track == FALSE)){
+  stop(print(paste0("The following track file(s) lack a counterpart:",
+    list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
+      normalizePath(folder)))]
+        
+                    )))
+}
+```
+
+
 
 **Come back to this is it is really important that they always match.**
 
@@ -139,46 +171,46 @@ Divide the animal tracks up by trial using the first landmark
 ```{r Get animal pos fx}
 get_animal_pos <- function(trial_limits,animal_track){
   num_trials = dim(trial_limits)[1] # count number of trials
-  i = 1             
-  trackz = tibble(5, dim(animal_track)[1]) 
-  colnames(trackz) <- c("video","trial","frame","x","y")
-  trackz[,1]       <- rep(files_df$landmark[num],dim(animal_track)[1])
- 
- while (i <= num_trials){              # for each set of trial starts                          
-    track_x   = vector()
-    track_y   = vector()   # empty vector for track xs and ys
-#   track_x   = [trial_limits(i , 2)]; track_y   = [trial_limits(i , 3)] ;
-#   to include origin
-    h = 1; 
-     
-    while (h <= length(animal_track[,1])){                      
-    # cycle through the frames
-    j   = animal_track[h,1];                                   
-    # pick the frame
-    
-        if (j >= trial_limits[i,1] & j <= trial_limits[i,6]){      
-            # if in the bounds of a given trial
-            track_x = c(track_x,animal_track[h,2])                
-            # append x values for each trial
-            track_y = c(track_y,animal_track[h,3])                
-            # append y values for each trial
-    }
-        
-    h = h + 1       
-    trackz[i] = c(t(track_x), t(track_y)) #add to cell array for this trial
-  }     
-  i = i + 1       
-    
- }      
+  
+  # make nested tibble of the sets
+  trackz <- purrr::map(vector(length=num_trials), tibble)
+  #colnames(trackz) <- c("video","trial","frame","x","y")
+  #trackz[,1]       <- animal_landmark[1]
+
+ i <- 1 # initialize i  
+ while (i <= dim(trial_limits)[1]){     
+   animal_track$trial_num[ animal_track$frame >= trial_limits[i,1] & 
+        animal_track$frame <= trial_limits[i,6] ] <- i
+   XY <- as_tibble(animal_track[animal_track$frame >= trial_limits[i,1] & 
+           animal_track$frame <= trial_limits[i,6],])
+   trackz[[i]] <- XY
+   i = i + 1
+ }
  return(trackz)
 }
 ```
 
+Get the all the tracks from a single file. Print one set.
 
 ```{r}
-trackz       <- get_animal_pos(trial_limits,animal_track) 
+trackz       <- get_animal_pos(trial_limits,animal_track)
+tail(trackz[[1]])
 ```
 
+Now apply this to all files.
+
+```{r}
+# for all files in files_df
+
+# run get_animal_pos
+
+# append / cbind into megatibble
+
+# return megatibble
+```
+
+
+Then make a function which tranforms the coords from all subtibbles
 
 ```{r trackz_transform fx}
 trackz_transform <- function(trackz,trial_limits){
@@ -218,6 +250,7 @@ trackz_transform <- function(trackz,trial_limits){
 
 ```{r}
 tranz_trackz <- trackz_transform(trackz,trial_limits)  # transform coords to origin and stimulus
+head(tranz_trackz)
 ```
 
 
