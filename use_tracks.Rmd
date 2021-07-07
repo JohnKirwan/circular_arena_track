@@ -43,7 +43,7 @@ tail(files_df)
 # are there any (predicted) track names not represented in the file list?
 # i.e. landmark files without a matching track file
 if(any(files_df$track    %in% list.files(normalizePath(folder)) == FALSE)){
-  stop(print(paste0("The following track file(s) are missing:",
+  stop(print(paste0("The following track file is missing:",
     files_df$track[which(files_df$track %in% list.files(normalizePath(folder)) == FALSE)]
                     )))
 }
@@ -51,7 +51,7 @@ if(any(files_df$track    %in% list.files(normalizePath(folder)) == FALSE)){
 # are any track files in the file list without a match in the landmark files?
 if(any(list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
            normalizePath(folder)))] %in% files_df$track == FALSE)){
-  stop(print(paste0("The following track file(s) lack a counterpart:",
+  stop(print(paste0("The following track file lacks a counterpart:",
     list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
       normalizePath(folder)))]
         
@@ -60,8 +60,6 @@ if(any(list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
 ```
 
 
-
-**Come back to this is it is really important that they always match.**
 
 ```{r}
 num <- 2
@@ -99,17 +97,16 @@ cart2theta <- function(x,y){
 }
 
 #function [trial_limits] = get_trial_limits(landmarks,animal_track)
-get_trial_limits <- function(landmarks,animal_track){
+get_trial_limits <- function(landmarks,animal_track,file_tbl){ #,
 
   num_trials = dim(landmarks)[1]/2 # count number of trials
 #trial_limits = zeros([num_trials 11]); # pick out start frame and centre and stimulus coords
-  trial_limits <- array(dim=c(num_trials,11))
-  #trial_limits <- as_tibble(trial_limits)
+  trial_limits <- array(dim=c(num_trials,12)) 
   colnames(trial_limits) <- c(
     "first_f","orig_x","orig_y","stim_x","stim_y","last_f",
-    "norm_stim_x","norm_stim_y","theta","rho","quadrant")
+    "norm_stim_x","norm_stim_y","theta","rho","quadrant","video")
 #  trial_limits %>% mutate(across(.cols = everything(),as.numeric))
-  cols(trial_limits = col_number())
+  cols(trial_limits = col_number()) #make all numeric
   i = 1 
   
  while (i <= num_trials){ # for each trial
@@ -125,9 +122,9 @@ get_trial_limits <- function(landmarks,animal_track){
      }
  
      trial_limits[i , 7:8] <- as.numeric(trial_limits[i, 4:5] - trial_limits[i , 2:3]) 
-# normalised stimulus centre in cartesian terms relative to centre of arena
+     # normalised stimulus centre in cartesian terms relative to centre of arena
 
-#[theta1 , rho1] = cart2pol(trial_limits[i , 7], trial_limits[i,8]); 
+     #[theta1 , rho1] = cart2pol(trial_limits[i , 7], trial_limits[i,8]); 
      theta1 = atan2(trial_limits[i,8],trial_limits[i , 7]) # polars for stimulus centre
      rho1   = sqrt(trial_limits[i , 7]^2 + trial_limits[i,8]^2)
      
@@ -148,8 +145,10 @@ get_trial_limits <- function(landmarks,animal_track){
     }else if (trial_limits[i , 9] >= 0.75*pi & trial_limits[i , 9] < 1.25*pi ){
         trial_limits[i , 11] = 3;
     }else if (trial_limits[i , 9] >= 1.25*pi & trial_limits[i , 9] < 1.75*pi ){
-        trial_limits[i , 11] = 4;
-    }    
+        trial_limits[i , 11] <- 4;
+    }
+    print(file_tbl[i,1])
+    trial_limits[i, 12]      <- file_tbl[[i,1]];
     i = i + 1 
  }
  return(trial_limits)
@@ -162,7 +161,7 @@ get_trial_limits <- function(landmarks,animal_track){
 # zero=0) (x) rho in pixels 
 
 ```{r}
-trial_limits <- get_trial_limits(animal_landmark,animal_track)
+trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df) #
 ```
 
 
