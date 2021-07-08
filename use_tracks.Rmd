@@ -89,13 +89,14 @@ With the assignment pipe *%<>%*, the variable is assigned to itself at the end.
 #function [trial_limits] = get_trial_limits(landmarks,animal_track)
 get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
 
-  num_trials = dim(landmarks)[1]/2 # count number of trials
-  #trial_limits = zeros([num_trials 11]); # pick out start frame and centre and stimulus coords
-  trial_limits <- as_tibble(array(0,dim=c(num_trials,12)))
+ num_trials = dim(landmarks)[1]/2 # count number of trials
+ # pick out start frame and centre and stimulus coords
+ trial_limits <- as_tibble(array(0,dim=c(num_trials,16),
+    dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
+    "last_f","norm_stim_x","norm_stim_y","theta","rho","quadrant","video",
+    "in_theta","in_rho","out_theta","out_rho"))),
+    .name_repair="unique")
   
- colnames(trial_limits) <- c(
-    "first_f","orig_x","orig_y","stim_x","stim_y","last_f",
-    "norm_stim_x","norm_stim_y","theta","rho","quadrant","video")
   trial_limits$video <- as.character(trial_limits$video)
   i = 1 
   
@@ -156,7 +157,8 @@ trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df,1) #
 ```
 
 
-Divide the animal tracks up by trial using the first landmark
+Divide the animal tracks up by trial using the first landmark. Initialize 
+transformed tracks for later.
 
 ```{r Get animal pos fx}
 get_animal_pos <- function(trial_limits,animal_track){
@@ -172,19 +174,42 @@ get_animal_pos <- function(trial_limits,animal_track){
    XY <- as_tibble(animal_track[animal_track$frame >= trial_limits[[i,1]] & 
            animal_track$frame <= trial_limits[[i,6]],]) # make a tibble of that trial
    #XY[,5] <- trial_limits[[i,12]]
+   XY %<>% add_column(trans_x=0,trans_y=0,trans_theta=0,trans_rho=0)
+   XY[,5:6] <- sweep(XY[,2:3],2,as.numeric(trial_limits[i,2:3]),"-")
+   
+   trans_theta <- mapply(atan2,XY[,6],XY[,5]) # polars for stim centre
+   trans_rho   <- sqrt(XY[,5]^2 + XY[,6]^2)
+   
+   XY[,7] <- trans_theta + (pi/2) - as.numeric(trial_limits[i,9]) # norm theta
+   XY[,8] <- trans_rho / as.numeric(trial_limits[i,10]) #normalised rho
+        
+   XY$trans_theta[XY$trans_theta>pi] <- XY$trans_theta[XY$trans_theta>pi] - 2*pi
    trackz[[i]] <- XY
+   
+#if(!any(XY[,8] < .25)){warning(paste0("Tracks begin >1/4 rad from centre for trial"))}
+   trial_limits[i,13] <- XY$trans_theta[which.min(abs(XY$trans_rho - .25))]
+   trial_limits[i,14] <- XY$trans_rho  [which.min(abs(XY$trans_rho - .25))]
+   trial_limits[i,15] <- XY$trans_theta[which.min(abs(XY$trans_rho - .5))]
+   trial_limits[i,16] <- XY$trans_rho  [which.min(abs(XY$trans_rho - .5))]
    i = i + 1
  }
- return(trackz)
+ return(list(trackz,trial_limits))
 }
 ```
 
 Get the all the tracks from a single file. Print one set.
 
 ```{r}
-trackz       <- get_animal_pos(trial_limits,animal_track)
+trial_track_list   <- get_animal_pos(trial_limits,animal_track)
+trackz             <- trial_track_list[[1]]
 tail(trackz[[1]])
 ```
+
+```{r}
+trial_limits      <- trial_track_list[[2]]
+tail(trial_limits)
+```
+
 
 Now apply this to all files.
 
@@ -205,65 +230,75 @@ get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
     trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df,i) #
   
     # run get_animal_pos
-    if(i == 1){  
-      all_trackz <- get_animal_pos(trial_limits,animal_track) # populate with first list
-    } else {
-      all_trackz <- c(all_trackz,get_animal_pos(trial_limits,animal_track))  
-      }
+    trial_track_list <- get_animal_pos(trial_limits,animal_track) 
+
+     if(i == 1){  
+       all_trackz       <- trial_track_list[[1]] # populate with first list
+       all_trial_limits <- trial_track_list[[2]] # first instance from above
+      
+     } else {
+       all_trackz <- c(all_trackz,get_animal_pos(trial_limits,animal_track))
+       all_trial_limits <- rbind(all_trial_limits,get_trial_limits(
+                            animal_landmark,animal_track,files_df,i))
+    }
     i <- i + 1
   }
- return(all_trackz)
+ trackz_n_limits <- list(all_trackz,all_trial_limits) 
+ return(trackz_n_limits)
 }
 ```
 
 
 
+
 ```{r}
-all_trackz <- get_all_animal_pos(animal_landmark,animal_track,files_df)
-str(all_trackz)
+trackz_n_limits <- get_all_animal_pos(animal_landmark,animal_track,files_df)
+all_trackz       <- trackz_n_limits[[1]]
+tail(all_trackz[[1]])
 ```
 
-Then make a function which tranforms the coords from all subtibbles
+
+```{r}
+all_trial_limits <- trackz_n_limits[[2]]
+tail(all_trial_limits)
+```
+
+
+Then make a function which transforms the coords from all tibbles in the big list
 
 ```{r trackz_transform fx}
-trackz_transform <- function(trackz,trial_limits){
-
- i = 1
- num_trials = size(trial_limits, 1) # count number of trials
- pre_tranz_trackz = cell(num_trials, 1) 
- 
-    while i <= num_trials ;                     # for each trial / cell array
-    j = 1;
-    
-        while j <= length(trackz{i}) ;          # for each set of coords (row)
-        
-        pre_tranz_trackz_1{i}(j,1:2) = trackz{i}(j,1:2) - trial_limits(i,2:3) ; %subtract centre coords from x and y coords
-        
-        [theta , rho] = cart2pol(pre_tranz_trackz_1{i}(j,1),pre_tranz_trackz_1{i}(j,2)) ;
-        pre_tranz_trackz_2{i}(j,1:2) = [theta rho] ; %subtract stimulus coords from x and y coords
-
-        tranz_trackz{i}(j,1) =     (pre_tranz_trackz_2{i}(j,1) + (pi/2)) -     trial_limits(i,9)    ; %normalised theta
-        tranz_trackz{i}(j,2) =      pre_tranz_trackz_2{i}(j,2) /     trial_limits(i,10)   ; %normalised rho
-        
-        if  tranz_trackz{i}(j,1) < (-2*pi)
-            tranz_trackz{i}(j,1) = tranz_trackz{i}(j,1) + (4*pi);
-        elseif tranz_trackz{i}(j,1) < 0
-            tranz_trackz{i}(j,1) = tranz_trackz{i}(j,1) + (2*pi);
-        end
-             
-        j = j + 1 ;
-        end
- 
-    i = i + 1;
-    end
-  return(tranz_trackz)
-}
+# trackz_transform <- function(all_trackz,trial_limits){
+# 
+#  num_trials = dim(trial_limits)[1] # count number of trials
+#  pre_tranz_trackz = all_trackz 
+#  i = 1
+#  while(i <= length(all_trackz)) {     # for each tibble in the list
+# 
+#         [theta , rho] = cart2pol(pre_tranz_trackz_1{i}(j,1),pre_tranz_trackz_1{i}(j,2)) ;
+#         pre_tranz_trackz_2{i}(j,1:2) = [theta rho] ; %subtract stimulus coords from x and y coords
+# 
+#         tranz_trackz{i}(j,1) =     (pre_tranz_trackz_2{i}(j,1) + (pi/2)) -     trial_limits(i,9)    ; %normalised theta
+#         tranz_trackz{i}(j,2) =      pre_tranz_trackz_2{i}(j,2) /     trial_limits(i,10)   ; #normalised rho
+#         
+#         if  tranz_trackz{i}(j,1) < (-2*pi)
+#             tranz_trackz{i}(j,1) = tranz_trackz{i}(j,1) + (4*pi);
+#         else if tranz_trackz{i}(j,1) < 0
+#             tranz_trackz{i}(j,1) = tranz_trackz{i}(j,1) + (2*pi);
+#         }
+#              
+#         j = j + 1 ;
+#     }
+#  
+#     i = i + 1;
+#     }
+#   return(tranz_trackz)
+# }
 ```
 
 
 ```{r}
-tranz_trackz <- trackz_transform(trackz,trial_limits)  # transform coords to origin and stimulus
-head(tranz_trackz)
+# tranz_trackz <- trackz_transform(trackz,trial_limits)  # transform coords to origin and stimulus
+# head(tranz_trackz)
 ```
 
 
@@ -277,6 +312,8 @@ circleValues = zeros([length(trial_limits[,1]) 4])
 i = 1; 
 while (i <= size(trial_limits, 1)) {
 
+  
+              which()
  [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.25)) ;
  circleValues(i,1:2) = tranz_trackz{i}(index, 1:2)  ;
  
