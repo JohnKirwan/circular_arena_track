@@ -257,6 +257,11 @@ all_trackz       <- trackz_n_limits[[1]]
 tail(all_trackz[[1]])
 ```
 
+How many trials are there?
+
+```{r}
+length(all_trackz)
+```
 Write the tracks to a file
 
 ```{r}
