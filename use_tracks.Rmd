@@ -237,9 +237,9 @@ get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
        all_trial_limits <- trial_track_list[[2]] # first instance from above
       
      } else {
-       all_trackz <- c(all_trackz,get_animal_pos(trial_limits,animal_track))
-       all_trial_limits <- rbind(all_trial_limits,get_trial_limits(
-                            animal_landmark,animal_track,files_df,i))
+       
+       all_trackz       <- c(all_trackz,trial_track_list[[1]])
+       all_trial_limits <- rbind(all_trial_limits,trial_track_list[[2]])
     }
     i <- i + 1
   }
@@ -252,7 +252,7 @@ get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
 
 
 ```{r}
-trackz_n_limits <- get_all_animal_pos(animal_landmark,animal_track,files_df)
+trackz_n_limits  <- get_all_animal_pos(animal_landmark,animal_track,files_df)
 all_trackz       <- trackz_n_limits[[1]]
 tail(all_trackz[[1]])
 ```
@@ -314,11 +314,11 @@ while (i <= size(trial_limits, 1)) {
 
   
               which()
- [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.25)) ;
- circleValues(i,1:2) = tranz_trackz{i}(index, 1:2)  ;
+ [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.25)) 
+ circleValues(i,1:2) = tranz_trackz{i}(index, 1:2)  
  
- [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.5))  ;
- circleValues(i,3:4) = tranz_trackz{i}(index, 1:2)  ;
+ [~, index] = min(abs(tranz_trackz{i}(:,2) - 0.5))  
+ circleValues(i,3:4) = tranz_trackz{i}(index, 1:2)  
  
  i = i + 1  ;
  }
