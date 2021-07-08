@@ -265,7 +265,8 @@ length(all_trackz)
 Write the tracks to a file
 
 ```{r}
-write_csv(map_dfr(all_trackz, ~ .x),file = "tracks_file.csv")
+write_csv(map_dfr(all_trackz, ~ .x),  file = "tracks_file.csv")
+write_delim(map_dfr(all_trackz, ~ .x),file = "tracks_file.txt",delim = "\t")
 ```
 
 
