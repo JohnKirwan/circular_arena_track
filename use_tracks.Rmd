@@ -16,8 +16,6 @@ library('tidyverse')
 library('magrittr')
 library('circular')
 ```
-
-
 Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena. Gets complete track from each set of trials, makes a plot and determines headings.
 
 ```{r}
@@ -94,7 +92,7 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
  trial_limits <- as_tibble(array(0,dim=c(num_trials,16),
     dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
     "last_f","norm_stim_x","norm_stim_y","theta","rho","quadrant","video",
-    "in_theta","in_rho","out_theta","out_rho"))),
+    "in_x","in_y","out_x","out_y"))),
     .name_repair="unique")
   
   trial_limits$video <- as.character(trial_limits$video)
@@ -187,10 +185,10 @@ get_animal_pos <- function(trial_limits,animal_track){
    trackz[[i]] <- XY
    
 #if(!any(XY[,8] < .25)){warning(paste0("Tracks begin >1/4 rad from centre for trial"))}
-   trial_limits[i,13] <- XY$trans_theta[which.min(abs(XY$trans_rho - .25))]
-   trial_limits[i,14] <- XY$trans_rho  [which.min(abs(XY$trans_rho - .25))]
-   trial_limits[i,15] <- XY$trans_theta[which.min(abs(XY$trans_rho - .5))]
-   trial_limits[i,16] <- XY$trans_rho  [which.min(abs(XY$trans_rho - .5))]
+   trial_limits[i,13] <- XY$trans_x[which.min(abs(XY$trans_rho - .25))]
+   trial_limits[i,14] <- XY$trans_y[which.min(abs(XY$trans_rho - .25))]
+   trial_limits[i,15] <- XY$trans_x[which.min(abs(XY$trans_rho - .5))]
+   trial_limits[i,16] <- XY$trans_y[which.min(abs(XY$trans_rho - .5))]
    i = i + 1
  }
  return(list(trackz,trial_limits))
@@ -210,8 +208,8 @@ trial_limits      <- trial_track_list[[2]]
 tail(trial_limits)
 ```
 
+Now apply this to all files.Then transform the coords from all tibbles in the big list.
 
-Now apply this to all files.
 
 ```{r}
 get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
@@ -277,8 +275,6 @@ tail(all_trial_limits)
 ```
 
 
-Then make a function which transforms the coords from all tibbles in the big list
-
 ```{r trackz_transform fx}
 # trackz_transform <- function(all_trackz,trial_limits){
 # 
@@ -306,20 +302,15 @@ Then make a function which transforms the coords from all tibbles in the big lis
 #     }
 #   return(tranz_trackz)
 # }
-```
 
-
-```{r}
 # tranz_trackz <- trackz_transform(trackz,trial_limits)  # transform coords to origin and stimulus
 # head(tranz_trackz)
-```
-
 
 # check that animal tracks start below 0.25 and increase
 
 ### Get animal track points closest to rho of 0.25 and 0.5 for each trial
 
-```{r}
+
 # circleValues = zeros([length(trial_limits[,1]) 4])    
 # 
 # i = 1; 
@@ -339,10 +330,36 @@ Then make a function which transforms the coords from all tibbles in the big lis
 ### Create cartesian vector from polar inner and outer circle coordinates 
 
 ```{r}
-intersect_angle1 <- array(numeric(), c(num_trials,1))    
-intersect_angle2 <- array(numeric(), c(num_trials,1)) 
-which_intersect  <- array(numeric(), c(num_trials,1)) 
+intersect_angle1 <- array(numeric(), c(dim(trial_limits)[1],1))    
+intersect_angle2 <- array(numeric(), c(dim(trial_limits)[1],1)) 
+which_intersect  <- array(numeric(), c(dim(trial_limits)[1],1)) 
 ```
+
+Line-Circle Intercept
+
+```{r}
+linecirc <- function(in_x,in_y,out_x,out_y){
+  # at2+bt+c=0
+  h = 0 # circle origin x
+  k = 0 # circle origin y
+  r = 1
+    
+  a = (out_x - in_x)**2 + (out_y - in_y)**2
+  b = 2*(out_x - in_x)*(in_x - h) + 2*(out_y - in_y)*(in_y - k)
+  c = (in_x - h)**2 + (in_y - k)**2 - r**2
+  
+  # the roots for t may be found in the usual quadratic form:
+  t = (-b + sqrt(b**2 - 4*a*c) / (2*a)) & (-b + -sqrt(b**2 - 4*a*c) / (2*a))
+  return(t)
+}
+```
+
+
+```{r}
+linecirc(trial_limits[1,13],trial_limits[1,14],trial_limits[1,15],trial_limits[1,16])
+```
+
+
 
 ###JS: The next section was a bit hard to follow, so I cleaned it up a bit
 
@@ -350,14 +367,16 @@ which_intersect  <- array(numeric(), c(num_trials,1))
 for(i = 1:num_trials){
     [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
     [outer_x, outer_y] = pol2cart(circleValues(i,3),circleValues(i,4));
-    animal_vector(i, 1) = inner_x ;  animal_vector(i, 2) = inner_y ;
-    animal_vector(i, 3) = outer_x ;  animal_vector(i, 4) = outer_y ;
-    slope(i) = (outer_y - inner_y)/(outer_x - inner_x) ;
-    animal_direction(i,1) = outer_x - inner_x;
-    animal_direction(i,2) = outer_y - inner_y;
-    intercept(i) = animal_direction(i,2) - slope(i) * animal_direction(i,1);
+    animal_vector[i, 1] = inner_x ;  animal_vector(i, 2) = inner_y ;
+    animal_vector[i, 3] = outer_x ;  animal_vector(i, 4) = outer_y ;
+    slope[i] = (outer_y - inner_y)/(outer_x - inner_x) ;
+    animal_direction[i,1] = outer_x - inner_x;
+    animal_direction[i,2] = outer_y - inner_y;
+    intercept[i] = animal_direction[i,2] - slope[i] * animal_direction[i,1];
 ### JS: This was "- slope(i) * animal_direction(i,2);" but I believe it should be "- slope(i) * animal_direction(i,1);"
-    [xout,yout] = linecirc(slope(i),intercept(i),0,0,1) ;
+    
+    
+    [xout,yout] = linecirc(slope[i],intercept[i],0,0,1) ;
     circle_intersect(i, 1:2) = xout;
     circle_intersect(i, 3:4) = yout; # find x and y points where line intersects with circle
 
@@ -425,20 +444,6 @@ animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
 write_csv(animal_radian_col, paste0(video_name,''_directions.csv')
 ```
 
-
-
-
-
-
-cart2rho <- function(x,y){
-  rho    <- sqrt(x^2 + y^2)
-  return(rho)
-}
-
-cart2theta <- function(x,y){
-  theta  <- atan2(y,x)
-  return(theta)
-}
 
 
 
