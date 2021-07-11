@@ -363,7 +363,7 @@ linecirc(trial_limits[1,13],trial_limits[1,14],trial_limits[1,15],trial_limits[1
 
 ###JS: The next section was a bit hard to follow, so I cleaned it up a bit
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 for(i = 1:num_trials){
     [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
     [outer_x, outer_y] = pol2cart(circleValues(i,3),circleValues(i,4));
@@ -397,7 +397,7 @@ for(i = 1:num_trials){
 
 Get angle for animal in each trial in degrees and put it in animal_angle
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 animal_radian = zeros([num_trials 1]) ;
 correct_intersect = zeros([num_trials 2]) ;
 animal_angle = zeros([num_trials 1]) ;
@@ -428,7 +428,7 @@ get the intersect of the tracks with the arena edge
 <!-- trials_angle_mean = zeros([3 1]); -->
 <!-- [mu ul ll] = circ_mean(animal_radian, [], 2) ; -->
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 circ_labels = as.character(1:length(animal_radian));
 directions  = circ_plot(animal_radian);
 #tracks = circ_plot();
@@ -436,7 +436,7 @@ directions  = circ_plot(animal_radian);
 
 ### Create csv output with trial number, position and direction in columns
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 animal_radian_col[:,1] = t(animal_radian) ;
 animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
 
