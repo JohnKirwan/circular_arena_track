@@ -360,9 +360,6 @@ linecirc(trial_limits[1,13],trial_limits[1,14],trial_limits[1,15],trial_limits[1
 ```
 
 
-
-###JS: The next section was a bit hard to follow, so I cleaned it up a bit
-
 ```{r eval=FALSE, include=FALSE}
 for(i = 1:num_trials){
     [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
