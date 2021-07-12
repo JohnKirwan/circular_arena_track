@@ -81,7 +81,7 @@ num_trials = length(animal_landmark$x)/2
 
 ## The files 
 
-With the assignment pipe *%<>%*, the variable is assigned to itself at the end.
+With the assignment pipe *%<>%*, the variable is assigned to itself at the end.The radius of the circle based on the stimulus distance is *r_px*.
 
 ```{r}
 #function [trial_limits] = get_trial_limits(landmarks,animal_track)
@@ -91,8 +91,8 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
  # pick out start frame and centre and stimulus coords
  trial_limits <- as_tibble(array(0,dim=c(num_trials,16),
     dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
-    "last_f","norm_stim_x","norm_stim_y","theta","rho","quadrant","video",
-    "in_x","in_y","out_x","out_y"))),
+    "last_f","norm_stim_x","norm_stim_y","theta","r_px","quadrant","video",
+    "in_x","in_y","out_x","out_y"))), 
     .name_repair="unique")
   
   trial_limits$video <- as.character(trial_limits$video)
@@ -191,6 +191,8 @@ get_animal_pos <- function(trial_limits,animal_track){
    trial_limits[i,16] <- XY$trans_y[which.min(abs(XY$trans_rho - .5))]
    i = i + 1
  }
+ #trial_limits[,13:16] <- mapply('/',trial_limits[,13:16], trial_limits[,10])
+ # norm to radius
  return(list(trackz,trial_limits))
 }
 ```
@@ -274,6 +276,12 @@ all_trial_limits <- trackz_n_limits[[2]]
 tail(all_trial_limits)
 ```
 
+This should go in the function. Normalize the trial limits by the radius.
+
+```{r}
+all_trial_limits[,13:16] <- mapply('/', all_trial_limits[,13:16], all_trial_limits[,10])
+```
+
 
 ```{r trackz_transform fx}
 # trackz_transform <- function(all_trackz,trial_limits){
@@ -339,7 +347,7 @@ Line-Circle Intercept
 
 ```{r}
 linecirc <- function(in_x,in_y,out_x,out_y){
-  # at2+bt+c=0
+  # at^2+bt+c=0
   h = 0 # circle origin x
   k = 0 # circle origin y
   r = 1
@@ -349,14 +357,16 @@ linecirc <- function(in_x,in_y,out_x,out_y){
   c = (in_x - h)**2 + (in_y - k)**2 - r**2
   
   # the roots for t may be found in the usual quadratic form:
-  t = (-b + sqrt(b**2 - 4*a*c) / (2*a)) & (-b + -sqrt(b**2 - 4*a*c) / (2*a))
-  return(t)
+  t1 = (-b + sqrt(b^2 - 4*a*c) / (2*a))
+  t2 = (-b - sqrt(b^2 - 4*a*c) / (2*a)) 
+  return(c(t1,t2))
 }
 ```
 
 
 ```{r}
-linecirc(trial_limits[1,13],trial_limits[1,14],trial_limits[1,15],trial_limits[1,16])
+linecirc(all_trial_limits[1,13],all_trial_limits[1,14],
+         all_trial_limits[1,15],all_trial_limits[1,16])
 ```
 
 
