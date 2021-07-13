@@ -79,14 +79,6 @@ if(length(animal_landmark$x) %% 2 == 1){ warning("Odd number of landmarks!") }
 num_trials = length(animal_landmark$x)/2 
 ```
 
-Create a fx cart2pol to generate polar coordinates. 
-
-```{r}
-cart2pol <- function(x,y){
-  atan2(y,x)
-}
-```
-
 
 ## The files 
 
@@ -188,6 +180,7 @@ get_animal_pos <- function(trial_limits,animal_track){
    trans_rho   <- sqrt(XY[,5]^2 + XY[,6]^2)
    
    XY[,7] <- trans_theta + (pi/2) - as.numeric(trial_limits[i,9]) # norm theta
+   XY[,7] <- as.circular(XY[,7],type="angles",units="radians")
    XY[,8] <- trans_rho / as.numeric(trial_limits[i,10]) #normalised rho
         
    XY$trans_theta[XY$trans_theta>pi] <- XY$trans_theta[XY$trans_theta>pi] - 2*pi
@@ -267,11 +260,18 @@ How many trials are there?
 ```{r}
 length(all_trackz)
 ```
+Make tibble for tracks rather than list
+
+```{r}
+trackz_tbl <- map_dfr(all_trackz, ~ .x)
+```
+
+
 Write the tracks to a file
 
 ```{r}
-write_csv(map_dfr(all_trackz, ~ .x),  file = "tracks_file.csv")
-write_delim(map_dfr(all_trackz, ~ .x),file = "tracks_file.txt",delim = "\t")
+write_csv(trackz_tbl,  file = "tracks_file.csv")
+write_delim(trackz_tbl,file = "tracks_file.txt",delim = "\t")
 ```
 
 
@@ -314,18 +314,14 @@ linecirc <- function(in_x,in_y,out_x,out_y){
   ints <- rbind(unlist(c( t1*(out_x - in_x) + in_x, t1*(out_y - in_y) + in_y)),
             unlist(c( t2*(out_x - in_x) + in_x, t2*(out_y - in_y) + in_y)))
             
-  int_2 <- unlist(c( t2*(out_x - in_x) + in_x, t2*(out_y - in_y) + in_y))
-
   d <- c(sqrt(ints[1,1]^2 + ints[1,2]^2),sqrt(ints[2,1]^2 + ints[2,2]^2))
   if(all.equal(d[1],d[2])==FALSE){warning("Intersect is off unit circle!")}
   
   dist2track    <- c(0,0) 
   dist2track[1] <- sqrt( (int_1[1]-out_x)^2 + (int_1[2]-out_y)^2 )
   dist2track[2] <- sqrt( (int_2[2]-out_x)^2 + (int_2[2]-out_y)^2 )
-  
   xy <- ints[which.min(dist2track),]
-
-  return(tibble::tibble(x_int = xy[1],  y_int = xy[2])) # return closest to outer pt
+  return(tibble::tibble(x_int = xy[1],y_int = xy[2])) # return closest to outer pt
 }
 ```
 
@@ -339,9 +335,77 @@ all_trial_limits[,17:18] <- pmap_dfr(list(
 
 
 ```{r}
-#all_trial_limits[,19]
 atan2(all_trial_limits[[1,18]],all_trial_limits[[1, 17]])
 ```
+With code modified from Dr. James J. Foster.
+
+```{r}
+rad_plot <- function(x, alpha, ax, rho.col, out.by, kappa.ci, ...){
+  require('circular')
+	if(missing(ax)){ax <- F} #fit mean axis (not direction)
+	if(missing(rho.col)){rho.col <- 'deeppink4'}#fit mean axis (not direction)
+	if(missing(out.by)){out.by = 0.05} # draw outside (or inside) by
+	if(missing(alpha)){alpha = 0.05} #proportion NOT to plot across
+		#spacing of stacked points, now automatically stacks towards centre unless otherwise specified
+	if(missing(kappa.ci)){kappa.ci = F} #proportion NOT to plot across
+		#spacing of stacked points, now automatically stacks towards centre unless otherwise specified
+	sp <- 0.07
+		if(!(	sum('mycirc'%in% ls())	)){
+		mycirc <- function(angles, clock){
+			if(missing(clock)){clock <- T}
+			if(clock){
+			return(		as.circular(angles,units='radians',type='angles',
+			modulo='2pi',zero=pi/2,rotation='clock',	template='none')	)
+				}else{
+				as.circular(angles,units='radians',type='angles',
+				 modulo='2pi',zero=pi/2,rotation='counter',template='none')
+	}}}
+	if(ax == F){
+			#circular plot settings
+	zr <- pi/2 #start at top of screen (pi*	90	/180)
+	bn <- 10*10*360/5 #bins
+	tcl <- rgb(1,1,1,0)#transparent colour
+	pcl <- rgb(.3,.1,.1,.5)#point colour
+	#plot characters
+	lw <- 0.5 #line width
+	pnt <- 2.5 #point size
+	arw <- 10 #arrowhead angle
+	arl <- 0.01 #arrowhead length
+	#	set up input variables
+	hd <- as.circular(x,units='radians',type='angles',
+			modulo='2pi',zero=pi/2,rotation='clock',	template='none')
+	sm <- summary(hd)
+	sv <- sd.circular(hd, na.rm=T)
+	lbl   <- c(0,pi)
+	plot(hd, col=tcl, main="", zero=zr, axes=F, shrink=1,tol=0.075)
+	axis.circular(1, at = mycirc(c(0,pi)), labels = c("0","180"))
+	par(new=T)
+	plot.circular(hd, col=tcl,main="",zero=zr,axes=F,shrink=1.05,tol=0.075)
+	points(hd,stack=T,bin=bn,sep=-sp,zero=zr,...)
+	par(new=T)
+	plot(hd, col=tcl, main="", zero=zr, axes=F, shrink=1,tol=0.075)
+	if(kappa.ci){
+	lines.circular(mycirc(rep(mean(hd, na.rm =T),2)), 
+	               y = -(1-A1(mle.vonmises.bootstrap.ci(hd, alpha = 0.05, bias = T, reps = 10^4)$kappa.ci)), col = rgb(1,0,0,0.2), lwd = 7, lend = 'butt')
+	}#if(kappa.ci)
+	arrows.circular( mean(hd, na.rm =T),zero=zr, col = rho.col,lwd=3,
+		 length=arl,angle=arw,shrink = .95 * rho.circular(hd,na.rm =T))
+	#find the lower and upper confidence interval bounds
+	ci <- mle.vonmises.bootstrap.ci(hd, alpha = alpha, bias = T,
+          reps = 10^4)$mu.ci
+	if(sign(max(ci) - mean(hd, na.rm =T)) == -1 | sign(mean(hd, na.rm =T) - min(ci)) == -1 ){#check if mean is right or left of max CI
+		#otherwise, plot in the reverse direction
+		sq = seq( from = as.numeric(min(ci)),
+					to = -as.numeric(2*pi - max(ci)), length.out = 10^3)
+		}else{ #if it is "little" plot from min to max
+		sq = seq( from = as.numeric(min(ci)),
+					to = as.numeric(max(ci)), length.out = 10^3)
+	}#if(abs(diff(qt)) > pi)
+	lines.circular(mycirc(sq), rep(out.by,10^3), col = rho.col, lwd = 3)
+	}#if(ax == F)
+}
+```
+
 
 Use atan2 to get the headings in radians. Then, having changed the class to circular, set them so that 0 refers to the stimulus midpoint and the rotation is clockwise. 
 
@@ -353,10 +417,37 @@ all_trial_limits$radians <- as.circular(all_trial_limits$radians, type="angles",
                             template="none", modulo="asis")
 all_trial_limits$radians <- conversion.circular(all_trial_limits$radians,   
                             zero=pi/2,rotation="clock")
-all_trial_limits$radians
+rad_plot(all_trial_limits$radians)
+title(main="Plot all headings")
 ```
 
 
+
+```{r}
+library('ggforce')
+all_trackz[[1]] %>%
+  ggplot() + geom_circle(aes(x=)) +
+  coord_fixed()
+
+```
+
+
+
+
+
+
+#### Redundant stuff below
+
+
+### Create csv output with trial number, position and direction in columns
+
+```{r eval=FALSE, include=FALSE}
+animal_radian_col[:,1] = t(animal_radian) ;
+animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
+
+# C = {video_name, animal_radian_col[:,1], animal_radian_col[:,2]} ;
+write_csv(animal_radian_col, paste0(video_name,''_directions.csv')
+```
 
 
 ```{r eval=FALSE, include=FALSE}
@@ -375,11 +466,9 @@ for(i = 1:num_trials){
     # find c from y = mc + c
     intercept[i] = animal_direction[i,2] - slope[i] * animal_direction[i,1];
 ### JS: This was "- slope(i) * animal_direction(i,2);" but I believe it should be "- slope(i) * animal_direction(i,1);"
-    
     [xout,yout] = linecirc(slope[i],intercept[i],0,0,1) ;
     circle_intersect(i, 1:2) = xout;
     circle_intersect(i, 3:4) = yout; # find x and y points where line intersects with circle
-
     #get polar coordinates of intersects
     [theta_target1, rho_target1] = cart2pol(circle_intersect(i,1),circle_intersect(i,3))   ;
     [theta_target2, rho_target2] = cart2pol(circle_intersect(i,2),circle_intersect(i,4))   ;
@@ -418,30 +507,3 @@ for(i = 1:num_trials){
     animal_angle[i]  = rad2deg(cart2pol(correct_intersect(i,1),correct_intersect(i,2)));
 }
 ```
-
-
-### Apply basic circular statistics to trials (uses radians)
- 
-<!-- trials_angle_mean = zeros([3 1]); -->
-<!-- [mu ul ll] = circ_mean(animal_radian, [], 2) ; -->
-
-```{r eval=FALSE, include=FALSE}
-circ_labels = as.character(1:length(animal_radian));
-directions  = circ_plot(animal_radian);
-#tracks = circ_plot();
-```
-
-### Create csv output with trial number, position and direction in columns
-
-```{r eval=FALSE, include=FALSE}
-animal_radian_col[:,1] = t(animal_radian) ;
-animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
-
-# C = {video_name, animal_radian_col[:,1], animal_radian_col[:,2]} ;
-write_csv(animal_radian_col, paste0(video_name,''_directions.csv')
-```
-
-
-
-
-

@@ -7,3 +7,5 @@
 *.Rproj
 *.asv
 *.RData
+tracks_file.csv
+tracks_file.txt
