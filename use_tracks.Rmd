@@ -79,6 +79,15 @@ if(length(animal_landmark$x) %% 2 == 1){ warning("Odd number of landmarks!") }
 num_trials = length(animal_landmark$x)/2 
 ```
 
+Create a fx cart2pol to generate polar coordinates. 
+
+```{r}
+cart2pol <- function(x,y){
+  atan2(y,x)
+}
+```
+
+
 ## The files 
 
 With the assignment pipe *%<>%*, the variable is assigned to itself at the end.The radius of the circle based on the stimulus distance is *r_px*.
@@ -226,18 +235,14 @@ get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
                       files_df$landmark[i])),sep="\t", header = FALSE)[,1:3]
     names(animal_landmark) <- c("frame","x","y")
     if(length(animal_landmark$x) %% 2 == 1){ warning("Odd number of landmarks!") }
-  
     trial_limits <- get_trial_limits(animal_landmark,animal_track,files_df,i) #
-  
     # run get_animal_pos
     trial_track_list <- get_animal_pos(trial_limits,animal_track) 
 
      if(i == 1){  
        all_trackz       <- trial_track_list[[1]] # populate with first list
        all_trial_limits <- trial_track_list[[2]] # first instance from above
-      
      } else {
-       
        all_trackz       <- c(all_trackz,trial_track_list[[1]])
        all_trial_limits <- rbind(all_trial_limits,trial_track_list[[2]])
     }
@@ -283,69 +288,93 @@ all_trial_limits[,13:16] <- mapply('/', all_trial_limits[,13:16], all_trial_limi
 ```
 
 
+Line-Circle Intercept.
 
-### Create cartesian vector from polar inner and outer circle coordinates 
-
-```{r}
-intersect_angle1 <- array(numeric(), c(dim(trial_limits)[1],1))    
-intersect_angle2 <- array(numeric(), c(dim(trial_limits)[1],1)) 
-which_intersect  <- array(numeric(), c(dim(trial_limits)[1],1)) 
-```
-
-Line-Circle Intercept
+Works when vector intersects circle.
 
 ```{r}
 linecirc <- function(in_x,in_y,out_x,out_y){
   # at^2+bt+c=0
   h = 0 # circle origin x
   k = 0 # circle origin y
-  r = 1
+  radius = 1
     
   a = (out_x - in_x)^2 + (out_y - in_y)^2 # vector length
   b = (2*(out_x - in_x)*(in_x - h)) + (2*(out_y - in_y)*(in_y - k)) # 
-  c = (in_x - h)^2 + (in_y - k)^2 - r^2
-  D <- b^2 - 4*a*c # discriminant - must be positive
+  c = (in_x - h)^2 + (in_y - k)^2 - radius^2
+  D <- (b^2) - (4*a*c) # discriminant - must be positive
   if(a <= 0){warning("Vector length is not positive!")}
   if(D <= 0){warning("Discriminant is not positive!")}
   if(c >= 0){warning("Starting pt is outside radius!")}
   
   # the roots for t may be found in the usual quadratic form:
-  t1 = (-b + sqrt(D) / (2*a))
-  t2 = (-b - sqrt(D) / (2*a)) 
+  t1 = (-b + sqrt(D)) / (2*a)
+  t2 = (-b - sqrt(D)) / (2*a) 
   
-  t3 <- 2*c / (- b + sqrt(D))
+  ints <- rbind(unlist(c( t1*(out_x - in_x) + in_x, t1*(out_y - in_y) + in_y)),
+            unlist(c( t2*(out_x - in_x) + in_x, t2*(out_y - in_y) + in_y)))
+            
+  int_2 <- unlist(c( t2*(out_x - in_x) + in_x, t2*(out_y - in_y) + in_y))
+
+  d <- c(sqrt(ints[1,1]^2 + ints[1,2]^2),sqrt(ints[2,1]^2 + ints[2,2]^2))
+  if(all.equal(d[1],d[2])==FALSE){warning("Intersect is off unit circle!")}
   
-  int_1   <- unlist(c(t1*(out_x - in_x) + in_x,t2*(out_y - in_y) + in_y))
-  int_2   <- unlist(c(t1*(out_x - in_x) + in_x,t2*(out_y - in_y) + in_y))
+  dist2track    <- c(0,0) 
+  dist2track[1] <- sqrt( (int_1[1]-out_x)^2 + (int_1[2]-out_y)^2 )
+  dist2track[2] <- sqrt( (int_2[2]-out_x)^2 + (int_2[2]-out_y)^2 )
+  
+  xy <- ints[which.min(dist2track),]
 
-  d1 <- sqrt(int_1[1]^2 + int_1[2]^2) # why are these not 1?
-  d2 <- sqrt(int_2[1]^2 + int_2[2]^2) 
-  return(c(t1,t2))
-
+  return(tibble::tibble(x_int = xy[1],  y_int = xy[2])) # return closest to outer pt
 }
 ```
 
 
 
+```{r}
+all_trial_limits[,17:18] <- pmap_dfr(list(
+  all_trial_limits$in_x,all_trial_limits$in_y,
+                    all_trial_limits$out_x,all_trial_limits$out_y), linecirc)
+```
+
 
 ```{r}
-linecirc(all_trial_limits[1,13],all_trial_limits[1,14],
-         all_trial_limits[1,15],all_trial_limits[1,16])
+#all_trial_limits[,19]
+atan2(all_trial_limits[[1,18]],all_trial_limits[[1, 17]])
 ```
+
+Use atan2 to get the headings in radians. Then, having changed the class to circular, set them so that 0 refers to the stimulus midpoint and the rotation is clockwise. 
+
+```{r}
+all_trial_limits[,19]<-mapply(atan2, all_trial_limits[,18],all_trial_limits[,17])
+colnames(all_trial_limits)[19] <- "radians"
+all_trial_limits$radians <- as.circular(all_trial_limits$radians, type="angles",
+                            units="radians",zero=0,rotation="counter",
+                            template="none", modulo="asis")
+all_trial_limits$radians <- conversion.circular(all_trial_limits$radians,   
+                            zero=pi/2,rotation="clock")
+all_trial_limits$radians
+```
+
+
 
 
 ```{r eval=FALSE, include=FALSE}
 for(i = 1:num_trials){
+    # get inner crossing
     [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
+    # get outer crossing
     [outer_x, outer_y] = pol2cart(circleValues(i,3),circleValues(i,4));
-    animal_vector[i, 1] = inner_x ;  animal_vector(i, 2) = inner_y ;
-    animal_vector[i, 3] = outer_x ;  animal_vector(i, 4) = outer_y ;
+    animal_vector[i, 1] = inner_x ;  
+    animal_vector[i, 2] = inner_y ;
+    animal_vector[i, 3] = outer_x ;  
+    animal_vector[i, 4] = outer_y ;
     slope[i] = (outer_y - inner_y)/(outer_x - inner_x) ;
     animal_direction[i,1] = outer_x - inner_x;
     animal_direction[i,2] = outer_y - inner_y;
+    # find c from y = mc + c
     intercept[i] = animal_direction[i,2] - slope[i] * animal_direction[i,1];
 ### JS: This was "- slope(i) * animal_direction(i,2);" but I believe it should be "- slope(i) * animal_direction(i,1);"
-    
     
     [xout,yout] = linecirc(slope[i],intercept[i],0,0,1) ;
     circle_intersect(i, 1:2) = xout;
@@ -390,9 +419,6 @@ for(i = 1:num_trials){
 }
 ```
 
-
-get the intersect of the tracks with the arena edge
-<!-- get_track_intersect(landmarks,animal_track) ; -->
 
 ### Apply basic circular statistics to trials (uses radians)
  
