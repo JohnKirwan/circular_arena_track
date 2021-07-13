@@ -318,8 +318,8 @@ linecirc <- function(in_x,in_y,out_x,out_y){
   if(all.equal(d[1],d[2])==FALSE){warning("Intersect is off unit circle!")}
   
   dist2track    <- c(0,0) 
-  dist2track[1] <- sqrt( (int_1[1]-out_x)^2 + (int_1[2]-out_y)^2 )
-  dist2track[2] <- sqrt( (int_2[2]-out_x)^2 + (int_2[2]-out_y)^2 )
+  dist2track[1] <- sqrt( (ints[1,1]-out_x)^2 + (ints[1,2]-out_y)^2 )
+  dist2track[2] <- sqrt( (ints[2,1]-out_x)^2 + (ints[2,2]-out_y)^2 )
   xy <- ints[which.min(dist2track),]
   return(tibble::tibble(x_int = xy[1],y_int = xy[2])) # return closest to outer pt
 }
@@ -424,15 +424,15 @@ title(main="Plot all headings")
 
 
 ```{r}
-library('ggforce')
-all_trackz[[1]] %>%
-  ggplot() + geom_circle(aes(x=)) +
-  coord_fixed()
-
+#library('ggforce')
+trackz_tbl %>% #group_by(video)
+  ggplot() + # geom_circle(aes(x0=0,y0=0,r=1)) +
+  coord_fixed() +
+  geom_point(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_rho))) + annotate("path", 
+   x=0+1*cos(seq(0,2*pi,length.out=100)),
+   y=0+1*sin(seq(0,2*pi,length.out=100)))
+# trans_rho*cos(trans_theta),y0=trans_rho*sin(trans_rho)
 ```
-
-
-
 
 
 
