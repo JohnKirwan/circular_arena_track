@@ -1,6 +1,7 @@
 ---
 title: "Use Animal Tracks"
-author: "John Kirwan"
+author: "
+John Kirwan"
 date: "30/6/2021"
 output: html_document
 ---
@@ -97,14 +98,13 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
     "last_f","norm_stim_x","norm_stim_y","theta","r_px","quadrant","video",
     "x0","y0","x1","y1"))), 
     .name_repair="unique")
-  
   trial_limits$video <- as.character(trial_limits$video)
   i = 1 
   
  while (i <= num_trials){ # for each trial
-   trial_limits[i, 1  ] <- as.numeric(landmarks[(i*2)-1,  1]) # trial i start frame
-   trial_limits[i, 2:3] <- as.list(as.numeric(landmarks[(i*2)-1,2:3])) # trial i centre pt x,y
-   trial_limits[i, 4:5] <- as.list(as.numeric(landmarks[i*2,    2:3])) # trial i stim centre x,y
+  trial_limits[i, 1  ]<- as.numeric(landmarks[(i*2)-1,  1])# trial i start frame
+  trial_limits[i, 2:3]<- as.list(as.numeric(landmarks[(i*2)-1,2:3]))# trial i centre pt x,y
+  trial_limits[i,4:5] <- as.list(as.numeric(landmarks[i*2,2:3]))# trial i stim centre x,y
     
      if (i < num_trials){
         trial_limits[i , 6] <- as.numeric(landmarks[((i+1)*2)-1,1] - 1)  # trial i last frame
@@ -182,8 +182,12 @@ get_animal_pos <- function(trial_limits,animal_track){
    XY[,7] <- trans_theta + (pi/2) - as.numeric(trial_limits[i,9]) # norm theta
    XY[,7] <- as.circular(XY[,7],type="angles",units="radians")
    XY[,8] <- trans_rho / as.numeric(trial_limits[i,10]) #normalised rho
-        
+   XY[,9] <- trial_limits[i,12]
+   XY[,10]<- as.character(i) # order of trials in video
+   colnames(XY)[10] <- "order" # order of trials in video
+   XY %<>% unite("vid_ord", video:order)
    XY$trans_theta[XY$trans_theta>pi] <- XY$trans_theta[XY$trans_theta>pi] - 2*pi
+   
    trackz[[i]] <- XY
    # assign tracks less than 40% of arena to be empty
    if(min(XY[,8])>.4){trackz[[i]] <- "Track starts too far from centre"}
@@ -196,6 +200,7 @@ get_animal_pos <- function(trial_limits,animal_track){
    trial_limits[i,16] <- XY$trans_y[which.min(abs(XY$trans_rho - .5))]
    i = i + 1
  }
+ 
  #trial_limits[,13:16] <- mapply('/',trial_limits[,13:16], trial_limits[,10])
  # norm to radius
  return(list(trackz,trial_limits))
@@ -440,10 +445,14 @@ For some reason it appears to be using the conventional unit circle zero and rot
 Later, use scale_colour_brewer(palette = "Paired")
 
 ```{r}
-trackz_tbl %>% #group_by(video)
+trackz_tbl %>% 
   ggplot() + coord_fixed() +
-  geom_point(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_theta)),
-             alpha=1, size=.7) + 
+  geom_path(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_theta),
+                group=vid_ord,colour=vid_ord),
+             alpha=0.3, size=.7) + 
+  geom_point(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_theta),
+                group=vid_ord,colour=vid_ord),
+             alpha=0.3, size=.5) +
   annotate("path",
   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="blue",
@@ -452,9 +461,13 @@ trackz_tbl %>% #group_by(video)
   x=0+.25*cos(seq(0,2*pi,length.out=100)),y=0+.25*sin(seq(0,2*pi,length.out=100))) +
   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + scale_colour_brewer(palette = "Paired") +
-  scale_fill_brewer(palette = "Paired")
+        axis.text=element_blank()) + theme(legend.position = "none")
+  #+ scale_colour_brewer(palette = "Paired") +
+  #scale_fill_brewer(palette = "Paired")
 ```
+#### Absolute tracks plot 
+
+We will also need a means of plotting the original tracks normalized to the arena width but  not based on the stimulus position.
 
 
 
