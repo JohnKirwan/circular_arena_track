@@ -15,11 +15,13 @@ knitr::opts_chunk$set(echo = TRUE)
 library('tidyverse')
 library('magrittr')
 library('circular')
+library('RColorBrewer')
 ```
 Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena. Gets complete track from each set of trials, makes a plot and determines headings.
 
 ```{r}
 folder <- 'F:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
+folder <- 'tracks/'
 filez  <- list.files(normalizePath(folder))
 # files_df  <- tibble(landmark=list.files(normalizePath(folder))[
 #                     grep('*point01.txt$',list.files(normalizePath(folder)))],
@@ -93,7 +95,7 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
  trial_limits <- as_tibble(array(0,dim=c(num_trials,16),
     dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
     "last_f","norm_stim_x","norm_stim_y","theta","r_px","quadrant","video",
-    "in_x","in_y","out_x","out_y"))), 
+    "x0","y0","x1","y1"))), 
     .name_repair="unique")
   
   trial_limits$video <- as.character(trial_limits$video)
@@ -113,8 +115,6 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
  
      trial_limits[i , 7:8] <- as.list(as.numeric(trial_limits[i, 4:5] - trial_limits[i , 2:3])) 
      # normalised stimulus centre in cartesian terms relative to centre of arena
-
-     #[theta1 , rho1] = cart2pol(trial_limits[i , 7], trial_limits[i,8]); 
      theta1 = atan2(trial_limits[[i,8]],trial_limits[[i , 7]]) # polars for stimulus centre
      rho1   = sqrt(trial_limits[[i, 7]]^2 + trial_limits[[i,8]]^2)
      
@@ -185,6 +185,9 @@ get_animal_pos <- function(trial_limits,animal_track){
         
    XY$trans_theta[XY$trans_theta>pi] <- XY$trans_theta[XY$trans_theta>pi] - 2*pi
    trackz[[i]] <- XY
+   # assign tracks less than 40% of arena to be empty
+   if(min(XY[,8])>.4){trackz[[i]] <- "Track starts too far from centre"}
+   if(any(XY[,8])> 1){warning('Track exceeds arena width!')}
    
 #if(!any(XY[,8] < .25)){warning(paste0("Tracks begin >1/4 rad from centre for trial"))}
    trial_limits[i,13] <- XY$trans_x[which.min(abs(XY$trans_rho - .25))]
@@ -247,19 +250,35 @@ get_all_animal_pos <- function(animal_landmark,animal_track,files_df){
 ```
 
 
-
-
 ```{r}
 trackz_n_limits  <- get_all_animal_pos(animal_landmark,animal_track,files_df)
 all_trackz       <- trackz_n_limits[[1]]
 tail(all_trackz[[1]])
 ```
 
-How many trials are there?
+Delete tracks which have no points less than 40% of the way across the arena.
 
 ```{r}
-length(all_trackz)
+all_trial_limits <- trackz_n_limits[[2]]
+tail(all_trial_limits)
 ```
+
+This should go in the function. Normalize the trial limits by the radius.
+
+```{r}
+all_trial_limits[,13:16] <- mapply('/', all_trial_limits[,13:16], all_trial_limits[,10])
+```
+
+Delete those rows for which the first and second circles are the same.
+
+```{r}
+idx <- which(all_trial_limits$x0==all_trial_limits$x1 & all_trial_limits$y0==all_trial_limits$y1)
+all_trackz[idx] <- NULL
+all_trial_limits <- all_trial_limits[-c(idx),]
+print(paste(length(all_trackz),"tracks post culling"))
+print(paste(dim(all_trial_limits)[1],"trials in limits list post culling"))
+```
+
 Make tibble for tracks rather than list
 
 ```{r}
@@ -276,51 +295,41 @@ write_delim(trackz_tbl,file = "tracks_file.txt",delim = "\t")
 
 
 
-```{r}
-all_trial_limits <- trackz_n_limits[[2]]
-tail(all_trial_limits)
-```
-
-This should go in the function. Normalize the trial limits by the radius.
-
-```{r}
-all_trial_limits[,13:16] <- mapply('/', all_trial_limits[,13:16], all_trial_limits[,10])
-```
-
-
 Line-Circle Intercept.
 
 Works when vector intersects circle.
 
 ```{r}
-linecirc <- function(in_x,in_y,out_x,out_y){
-  # at^2+bt+c=0
-  h = 0 # circle origin x
-  k = 0 # circle origin y
-  radius = 1
-    
-  a = (out_x - in_x)^2 + (out_y - in_y)^2 # vector length
-  b = (2*(out_x - in_x)*(in_x - h)) + (2*(out_y - in_y)*(in_y - k)) # 
-  c = (in_x - h)^2 + (in_y - k)^2 - radius^2
+linecirc <- function(x0,y0,x1,y1){
+  h = 0;k=0;radius=1 # circle origin x,y
+  a = (x1 - x0)^2 + (y1 - y0)^2 # vector length
+  b = (2*(x1 - x0)*(x0 - h)) + (2*(y1 - y0)*(y0 - k)) # 
+  c = (x0 - h)^2 + (y0 - k)^2 - radius^2
   D <- (b^2) - (4*a*c) # discriminant - must be positive
   if(a <= 0){warning("Vector length is not positive!")}
-  if(D <= 0){warning("Discriminant is not positive!")}
+  if(D <= 0){warning(paste0(
+    "Discriminant is not positive with x0=",x0," y0=",y0," x1=",x1," y1=",y1))}
   if(c >= 0){warning("Starting pt is outside radius!")}
   
   # the roots for t may be found in the usual quadratic form:
-  t1 = (-b + sqrt(D)) / (2*a)
-  t2 = (-b - sqrt(D)) / (2*a) 
-  
-  ints <- rbind(unlist(c( t1*(out_x - in_x) + in_x, t1*(out_y - in_y) + in_y)),
-            unlist(c( t2*(out_x - in_x) + in_x, t2*(out_y - in_y) + in_y)))
+  t <- c(0,0)
+  t[1] = (-b + sqrt(D)) / (2*a)
+  t[2] = (-b - sqrt(D)) / (2*a) 
+  # 1st and 2nd rows of ints correspond to 1st and 2nd root respectively
+  ints <- rbind(unlist(c( t[1]*(x1 - x0) + x0, t[1]*(y1 - y0) + y0)),
+                unlist(c( t[2]*(x1 - x0) + x0, t[2]*(y1 - y0) + y0)))
             
   d <- c(sqrt(ints[1,1]^2 + ints[1,2]^2),sqrt(ints[2,1]^2 + ints[2,2]^2))
   if(all.equal(d[1],d[2])==FALSE){warning("Intersect is off unit circle!")}
-  
+  # 1st and 2nd rows of dist2track correspond to 1st and 2nd root respectively
   dist2track    <- c(0,0) 
-  dist2track[1] <- sqrt( (ints[1,1]-out_x)^2 + (ints[1,2]-out_y)^2 )
-  dist2track[2] <- sqrt( (ints[2,1]-out_x)^2 + (ints[2,2]-out_y)^2 )
+  dist2track[1] <- sqrt( (ints[1,1]-x1)^2 + (ints[1,2]-y1)^2 )
+  dist2track[2] <- sqrt( (ints[2,1]-x1)^2 + (ints[2,2]-y1)^2 )
   xy <- ints[which.min(dist2track),]
+  
+  # commented because NAs crash this part
+  #if(t[1] < 1 | t[2] > 0){ #which.min(dist2track)
+  #  warning('Roots imply vector is weird') }
   return(tibble::tibble(x_int = xy[1],y_int = xy[2])) # return closest to outer pt
 }
 ```
@@ -329,14 +338,11 @@ linecirc <- function(in_x,in_y,out_x,out_y){
 
 ```{r}
 all_trial_limits[,17:18] <- pmap_dfr(list(
-  all_trial_limits$in_x,all_trial_limits$in_y,
-                    all_trial_limits$out_x,all_trial_limits$out_y), linecirc)
+  all_trial_limits$x0,all_trial_limits$y0,
+                    all_trial_limits$x1,all_trial_limits$y1), linecirc)
 ```
 
 
-```{r}
-atan2(all_trial_limits[[1,18]],all_trial_limits[[1, 17]])
-```
 With code modified from Dr. James J. Foster.
 
 ```{r}
@@ -420,90 +426,36 @@ all_trial_limits$radians <- conversion.circular(all_trial_limits$radians,
 rad_plot(all_trial_limits$radians)
 title(main="Plot all headings")
 ```
-
-
+Temporary fix - remove observations with rho value greater than 1
 
 ```{r}
-#library('ggforce')
+trackz_tbl <- trackz_tbl[trackz_tbl$trans_rho <= 1,]
+```
+
+
+#### Plotting
+
+For some reason it appears to be using the conventional unit circle zero and rotation (points concentrated at x=1,y=0).
+
+Later, use scale_colour_brewer(palette = "Paired")
+
+```{r}
 trackz_tbl %>% #group_by(video)
-  ggplot() + # geom_circle(aes(x0=0,y0=0,r=1)) +
-  coord_fixed() +
-  geom_point(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_rho))) + annotate("path", 
-   x=0+1*cos(seq(0,2*pi,length.out=100)),
-   y=0+1*sin(seq(0,2*pi,length.out=100)))
-# trans_rho*cos(trans_theta),y0=trans_rho*sin(trans_rho)
+  ggplot() + coord_fixed() +
+  geom_point(aes(x=trans_rho*cos(trans_theta),y=trans_rho*sin(trans_theta)),
+             alpha=1, size=.7) + 
+  annotate("path",
+  x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
+  annotate("path", color="blue",
+  x=0+.5*cos(seq(0,2*pi,length.out=100)),y=0+.5*sin(seq(0,2*pi,length.out=100))) +
+  annotate("path", color="orange",
+  x=0+.25*cos(seq(0,2*pi,length.out=100)),y=0+.25*sin(seq(0,2*pi,length.out=100))) +
+  xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
+  theme(axis.line=element_blank(),axis.ticks=element_blank(),
+        axis.text=element_blank()) + scale_colour_brewer(palette = "Paired") +
+  scale_fill_brewer(palette = "Paired")
 ```
 
 
 
-#### Redundant stuff below
 
-
-### Create csv output with trial number, position and direction in columns
-
-```{r eval=FALSE, include=FALSE}
-animal_radian_col[:,1] = t(animal_radian) ;
-animal_radian_col[:,2] = circular::rad(t(animal_radian) ;
-
-# C = {video_name, animal_radian_col[:,1], animal_radian_col[:,2]} ;
-write_csv(animal_radian_col, paste0(video_name,''_directions.csv')
-```
-
-
-```{r eval=FALSE, include=FALSE}
-for(i = 1:num_trials){
-    # get inner crossing
-    [inner_x, inner_y] = pol2cart(circleValues(i,1),circleValues(i,2));
-    # get outer crossing
-    [outer_x, outer_y] = pol2cart(circleValues(i,3),circleValues(i,4));
-    animal_vector[i, 1] = inner_x ;  
-    animal_vector[i, 2] = inner_y ;
-    animal_vector[i, 3] = outer_x ;  
-    animal_vector[i, 4] = outer_y ;
-    slope[i] = (outer_y - inner_y)/(outer_x - inner_x) ;
-    animal_direction[i,1] = outer_x - inner_x;
-    animal_direction[i,2] = outer_y - inner_y;
-    # find c from y = mc + c
-    intercept[i] = animal_direction[i,2] - slope[i] * animal_direction[i,1];
-### JS: This was "- slope(i) * animal_direction(i,2);" but I believe it should be "- slope(i) * animal_direction(i,1);"
-    [xout,yout] = linecirc(slope[i],intercept[i],0,0,1) ;
-    circle_intersect(i, 1:2) = xout;
-    circle_intersect(i, 3:4) = yout; # find x and y points where line intersects with circle
-    #get polar coordinates of intersects
-    [theta_target1, rho_target1] = cart2pol(circle_intersect(i,1),circle_intersect(i,3))   ;
-    [theta_target2, rho_target2] = cart2pol(circle_intersect(i,2),circle_intersect(i,4))   ;
-    intersect_angle1(i) = radtodeg(theta_target1) ; 
-    intersect_angle2(i) = radtodeg(theta_target2) ;
-        
-    ### JS: Instead of the next section being a manual selection, you could
-    ### automatically select the intersect that is closest to the outer circle
-    ### crossing, e.g. like this:
-    dist_to_track(1) = sqrt( (xout(1)-outer_x)^2 + (yout(1)-outer_y)^2 );
-    dist_to_track(2) = sqrt( (xout(2)-outer_x)^2 + (yout(2)-outer_y)^2 );
-    [~, which_intersect(i)] = min(dist_to_track);
-}
-```
-
-Get angle for animal in each trial in degrees and put it in animal_angle
-
-```{r eval=FALSE, include=FALSE}
-animal_radian = zeros([num_trials 1]) ;
-correct_intersect = zeros([num_trials 2]) ;
-animal_angle = zeros([num_trials 1]) ;
-
-for(i = 1:num_trials){
-    if  (which_intersect(i) == 1){
-        correct_intersect(i,1) = circle_intersect(i,1);
-        correct_intersect(i,2) = circle_intersect(i,3);
-    } else if (which_intersect(i) == 2){
-        correct_intersect(i,1) = circle_intersect(i,2);
-        correct_intersect(i,2) = circle_intersect(i,4);
-    } else {
-        error('Error, must be 1 or 2');
-    }
-    
-    #add animals angle relative to stimulus centre to animal_angle
-    animal_radian[i] = cart2pol(correct_intersect(i,1),correct_intersect(i,2));
-    animal_angle[i]  = rad2deg(cart2pol(correct_intersect(i,1),correct_intersect(i,2)));
-}
-```
