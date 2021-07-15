@@ -380,6 +380,14 @@ trackz_tbl$rel_theta <- conversion.circular(
 ```
 
 
+Check which trails are also in df
+
+```{r}
+which(trackz_tbl$video %in% df$video)  # which track rows shares vid name with df
+JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
+```
+
+
 #### Plotting
 
 *Points are plotting correctly although the zero and rotation are according to the unit circle becuase the points themselves are oriented that way, e.g. an upward pointing track has a heading of c.1.6.*
@@ -395,7 +403,7 @@ circme <- circular::mean.circular(all_trial_limits$abs_rads)
 R      <- circular::rho.circular (all_trial_limits$abs_rads)
 
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-trackz_tbl %>% filter(video=="GOPR0243") %>%
+JEB18_tracks %>% filter(video=="GOPR0243") %>%
   ggplot() + coord_fixed() +
   geom_path(aes(x=trans_x, y=trans_y,
                 group=vid_ord,colour=vid_ord),
@@ -424,10 +432,10 @@ circme <- circular::mean.circular(all_trial_limits$radians)
 R      <- circular::rho.circular (all_trial_limits$radians)
 
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-trackz_tbl %>% filter(video=="GOPR0243") %>%
+JEB18_tracks %>% filter(video=="GOPR0243") %>%
   ggplot() + coord_fixed() + 
-  geom_path(aes(x=trans_rho*cos(-((pi/2)-rel_theta)), #(pi/2)-
-                y=trans_rho*sin(-((pi/2)-rel_theta)), #(pi/2)-
+  geom_path(aes(x=trans_rho*cos(((pi/2)-rel_theta)), #(pi/2)-
+                y=trans_rho*sin(((pi/2)-rel_theta)), #(pi/2)-
                 group=vid_ord,colour=vid_ord),
              alpha=0.3, size=.7) + 
   geom_point(aes(x=trans_rho*cos(rel_theta), #(pi/2)-
@@ -448,7 +456,6 @@ trackz_tbl %>% filter(video=="GOPR0243") %>%
         axis.text=element_blank()) + theme(legend.position = "none") + 
   geom_segment(aes(x=0,y=0,xend=R*cos(circme),yend=R*sin(circme)),size=2)
 ```
-
 
 
 
@@ -486,8 +493,6 @@ df %>% filter(video=="GOPR0243") %>%
         axis.text=element_blank()) + theme(legend.position = "none") + 
   geom_segment(aes(x=0,y=0,xend=R*cos((pi/2)-circme),yend=R*sin((pi/2)-circme)),size=2)
 ```
-
-
 
 
 Write the tracks to a file
