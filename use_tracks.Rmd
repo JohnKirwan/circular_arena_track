@@ -169,45 +169,49 @@ get_animal_pos <- function(trial_limits,animal_track){
 
  i <- 1 # initialize i  
  while (i <= dim(trial_limits)[1]){    # for each trial in a video 
+
    animal_track$trial_num[ animal_track$frame >= trial_limits$first_f[i] & 
-        animal_track$frame <= trial_limits$last_f[i] ] <- i # get the trial no for each obs
+     animal_track$frame <= trial_limits$last_f[i]] <- i # get the trial no for each obs
    XY <- as_tibble(animal_track[animal_track$frame >= trial_limits$first_f[i] & 
-           animal_track$frame <= trial_limits$last_f[i],]) # make a tibble of that trial
-   XY %<>% add_column(trans_x=0,trans_y=0,trans_theta=0,trans_rho=0)
+        animal_track$frame <= trial_limits$last_f[i],]) # make a tibble of that trial
+   XY %<>% add_column(trans_x=0,trans_y=0,abs_theta=0,trans_rho=0,video=NA,
+                      order=NA,vid_ord=NA,rel_theta=0)
    XY[,5:6] <- sweep(XY[,2:3],2,as.numeric(trial_limits[i,2:3]),"-") # subtract origin
    XY[,5:6] <- XY[,5:6] / trial_limits$r_px[i]
    
-   trans_theta <- mapply(atan2,XY[,6],XY[,5]) # polars for points
-   trans_rho   <- sqrt(XY[,5]^2 + XY[,6]^2)
+   # reorient theta to be clockwise and 
+   XY$abs_theta <- (pi/2) - mapply(atan2,XY$trans_y,XY$trans_x) # polars for points
    
-   XY[,7] <- trans_theta + (pi/2) - as.numeric(trial_limits[i,9]) # norm theta
-   XY[,7] <- as.circular(XY[,7],type="angles",units="radians")
-   XY[,8] <- trans_rho  #/as.numeric(trial_limits$r_px[i]) #normalised rho
-   XY[,9] <- trial_limits[i,12]
-   XY[,10]<- as.character(i) # order of trials in video
-   colnames(XY)[10] <- "order" # order of trials in video
-   XY$trans_theta[XY$trans_theta>pi] <- XY$trans_theta[XY$trans_theta>pi] - 2*pi
-   XY %<>% unite("vid_ord", video:order,remove = FALSE)
-   XY$rel_theta <- XY$trans_theta - trial_limits$stim_theta[i]
-   XY$rel_theta[XY$rel_theta > pi] <- XY$rel_theta[XY$rel_theta > pi] - 2*pi
+   # looks like this line below should apply to rel_theta
+   XY$trans_rho <- unlist(sqrt(XY[,5]^2 + XY[,6]^2)) #/as.numeric(trial_limits$r_px[i]) #normalised rho
+   XY$video <- trial_limits$video[i]
+   XY$order <- as.character(i) # order of trials in video
 
+   XY %<>% unite("vid_ord", video:order,remove = FALSE, sep=" ")
+   # reorient stim_theta and get relative position
+   XY$rel_theta <- XY$abs_theta - (pi/2 - trial_limits$stim_theta[i])
+   # get back between -pi and pi
+   XY$rel_theta[XY$rel_theta > 2*pi]  <- XY$rel_theta[XY$rel_theta >  2*pi] - 2*pi
+   XY$rel_theta[XY$rel_theta < 0] <- XY$rel_theta[XY$rel_theta < 0] + 2*pi
+   XY$rel_theta <- (pi/2) - XY$rel_theta # restore to zero=0, rotation=counter
+   
+   XY$rel_x <- XY$trans_rho*cos(XY$rel_theta)
+   XY$rel_y <- XY$trans_rho*sin(XY$rel_theta)
    trackz[[i]] <- XY
    # assign tracks less than 40% of arena to be empty
-   if(min(XY[,8])>.4){trackz[[i]] <- "Track starts too far from centre"}
-   if(any(XY[,8])> 1){warning('Track exceeds arena width!')}
+   if(min(XY$trans_rho>.4)){trackz[[i]] <- "Track starts too far from centre"}
+   if(any(XY$trans_rho> 1)){warning('Track exceeds arena width!')}
    
 #if(!any(XY[,8] < .25)){warning(paste0("Tracks begin >1/4 rad from centre for trial"))}
    trial_limits$x0[i] <- XY$trans_x[which.min(abs(XY$trans_rho - .25))]
    trial_limits$y0[i] <- XY$trans_y[which.min(abs(XY$trans_rho - .25))]
    trial_limits$x1[i] <- XY$trans_x[which.min(abs(XY$trans_rho - .5))]
    trial_limits$y1[i] <- XY$trans_y[which.min(abs(XY$trans_rho - .5))]
+   trial_limits$order[i]   <- as.character(i) 
    trial_limits$vid_ord[i] <- paste0(trial_limits[i,12],"_",i)
    i = i + 1
  }
- #colnames(trial_limits)[17] <- "vid_ord"
- #trial_limits[,13:16] <- mapply('/',trial_limits[,13:16], trial_limits[,10])
- # norm to radius
- return(list(trackz,trial_limits))
+ return(list(trackz,trial_limits)) # norm to radius
 }
 ```
 
@@ -224,7 +228,7 @@ trial_limits      <- trial_track_list[[2]]
 tail(trial_limits)
 ```
 
-Now apply this to all files.Then transform the coords from all tibbles in the big list.
+Now apply this to all files.Then transform the coordinates from all tibbles in the big list.
 
 ```{r}
 get_all_animal_pos <- function(landmarks,animal_track,files_df){
@@ -262,7 +266,7 @@ tail(all_trackz[[1]])
 
 ```{r}
 all_trial_limits <- trackz_n_limits[[2]]
-all_trial_limits$stim_theta <- as.circular(all_trial_limits$stim_theta)
+#all_trial_limits$stim_theta <- as.circular(all_trial_limits$stim_theta)
 tail(all_trial_limits)
 ```
 Delete those rows for which the first and second circles are the same.
@@ -333,64 +337,132 @@ intz <- pmap_dfr(list(
 all_trial_limits$x_int <- intz$x_int
 all_trial_limits$y_int <- intz$y_int
 
-all_trial_limits$abs_rads <-mapply(atan2,
-                                   all_trial_limits$y_int,all_trial_limits$x_int)
+all_trial_limits$abs_rads <-mapply(atan2,all_trial_limits$y_int,all_trial_limits$x_int)
+# convert these values to be 0 to 2*pi, clockwise
+abs_rads_clock  <- (pi/2) - all_trial_limits$abs_rads
+#all_trial_limits$abs_rads <- as.circular(all_trial_limits$abs_rads, type="angles",
+#                            units="radians",zero=0,rotation="counter",
+#                            template="none", modulo="asis")
 
-all_trial_limits$abs_rads <- as.circular(all_trial_limits$abs_rads, type="angles",
-                            units="radians",zero=0,rotation="counter",
-                            template="none", modulo="asis")
+all_trial_limits$radians  <- ((pi/2)-all_trial_limits$abs_rads) - ((pi/2)- all_trial_limits$stim_theta)
+all_trial_limits$radians[all_trial_limits$radians < 0] <- all_trial_limits$radians[
+  all_trial_limits$radians < 0] + 2*pi
+all_trial_limits$radians <- (pi/2) - all_trial_limits$radians
 
-all_trial_limits$radians  <- all_trial_limits$abs_rads - all_trial_limits$stim_theta
 all_trial_limits$radians[all_trial_limits$radians > pi] <- all_trial_limits$radians[
   all_trial_limits$radians > pi] - 2*pi
-
+all_trial_limits$radians[all_trial_limits$radians < -pi] <- all_trial_limits$radians[
+  all_trial_limits$radians < -pi] + 2*pi
 ```
 
-Temporary fix - remove observations with rho value greater than 1
+Temporary fix - remove observations with rho value greater than 1. Remove cases where there were more than 4 trials in the same video.
 
 ```{r}
 trackz_tbl <- trackz_tbl[trackz_tbl$trans_rho <= 1,]
+trackz_tbl <- trackz_tbl[!trackz_tbl$order > 4,]
+all_trial_limits <- all_trial_limits[!all_trial_limits$order > 4,]
 ```
 
 #### Radian conversion
 
 ```{r}
 ## change top of arena to be at zero and rotation clockwise
-all_trial_limits$abs_rads <- conversion.circular(
-                            all_trial_limits$abs_rads, type="angles",
-                            units="radians",zero=pi/2,rotation="clock",
-                            template="none", modulo="asis")
-
-all_trial_limits$radians <- conversion.circular(
-                            all_trial_limits$radians, type="angles",
-                            units="radians",zero=pi/2,rotation="clock",
-                            template="none", modulo="asis")
-
-# make the radians aligned to the top and rotation to be clockwise
-trackz_tbl$trans_theta <- conversion.circular(
-                            trackz_tbl$trans_theta, type="angles",
-                            units="radians",zero=pi/2,rotation="clock",
-                            template="none", modulo="asis")
-
-# make the radians aligned to the top and rotation to be clockwise
-trackz_tbl$rel_theta <- conversion.circular(
-                            trackz_tbl$rel_theta, type="angles",
-                            units="radians",zero=pi/2,rotation="clock",
-                            template="none", modulo="asis")
+# all_trial_limits$abs_rads <- conversion.circular(
+#                             all_trial_limits$abs_rads, type="angles",
+#                             units="radians",zero=pi/2,rotation="clock",
+#                             template="none", modulo="asis")
+# 
+# all_trial_limits$radians <- conversion.circular(
+#                             all_trial_limits$radians, type="angles",
+#                             units="radians",zero=pi/2,rotation="clock",
+#                             template="none", modulo="asis")
+# 
+# # make the radians aligned to the top and rotation to be clockwise
+# trackz_tbl$abs_theta <- conversion.circular(
+#                             trackz_tbl$abs_theta, type="angles",
+#                             units="radians",zero=pi/2,rotation="clock",
+#                             template="none", modulo="asis")
+# 
+# # make the radians aligned to the top and rotation to be clockwise
+# trackz_tbl$rel_theta <- conversion.circular(
+#                             trackz_tbl$rel_theta, type="angles",
+#                             units="radians",zero=pi/2,rotation="clock",
+#                             template="none", modulo="asis")
 ```
 
+#### Bring in data frame with video names and trial order
+
+Merge "grey control" into "control".
+
+```{r}
+df <- read.delim('Diadema_tracks.txt', sep="\t", header = TRUE)
+df %<>% filter(locale=="Tenerife")
+df$locale   <- NULL
+df$species  <- NULL
+df$predator <- NULL
+# df$heading_rad <- as.circular(df$heading_rad,type="angles",units="radians",
+#                       zero=pi/2,rotation="clock", template="none",modulo="asis")
+#df$heading_rad[df$heading_rad>pi] <- df$heading_rad[df$heading_rad>pi] - 2*pi
+
+df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
+
+df$type[df$type=="grey control"] <- "control"
+df$pattern[df$pattern=="grey control"] <- "control"
+df$heading_rad <- (pi/2) - df$heading_rad # unit circle rotation and zero
+df$radians[df$radians < 0] <- df$radians[ df$radians < 0] + 2*pi
+df %<>% unite("cond", type:arc, remove = FALSE, sep=" ")
+head(df)
+```
 
 Check which trails are also in df
 
 ```{r}
-which(trackz_tbl$video %in% df$video)  # which track rows shares vid name with df
+ # which track rows shares vid name with df
+trackz_tbl$arc  <- rep(0,dim(trackz_tbl)[1])
+trackz_tbl$type <- as.character(rep("",dim(trackz_tbl)[1]))
+all_trial_limits$arc  <- rep(0,dim(all_trial_limits)[1])
+all_trial_limits$type <- as.character(rep("",dim(all_trial_limits)[1]))
+
+i=1
+while(i <= dim(df)[1]){
+  trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
+  trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
+  all_trial_limits$arc [which(all_trial_limits$video==df$video[i])] <- df$arc[i]
+  all_trial_limits$type[which(all_trial_limits$video==df$video[i])] <- df$type[i]
+  i=i+1
+}
+
+trackz_tbl %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
+all_trial_limits %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
 JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
+```
+
+#### Identify tracks
+
+Bring over relevant information from df dataframe to other dataframes
+
+```{r}
+JEB18_tracks     <- subset(JEB18_tracks, arc %in% c(0,17,40))
+all_trial_limits <- subset(all_trial_limits, arc %in% c(0,17,40))
+```
+
+Drop all_trial_limits rows which have a type not derived from df
+
+```{r}
+all_trial_limits <- all_trial_limits[!all_trial_limits$type=="",]
+```
+
+Make the arc width a factor
+
+```{r}
+all_trial_limits$arc <- as.factor(all_trial_limits$arc)
+JEB18_tracks$arc     <- as.factor(JEB18_tracks$arc)
 ```
 
 
 #### Plotting
 
-*Points are plotting correctly although the zero and rotation are according to the unit circle becuase the points themselves are oriented that way, e.g. an upward pointing track has a heading of c.1.6.*
+*Points are plotting correctly although the zero and rotation are according to the unit circle because the points themselves are oriented that way, e.g. an upward pointing track has a heading of c.1.6.*
 
 For some reason it appears to be using the conventional unit circle zero and rotation (points concentrated at x=1,y=0).
 
@@ -398,100 +470,85 @@ Later, use scale_colour_brewer(palette = "Paired")
 
 #### Absolute position of tracks with regard to the arena (not the stimulus)
 
-```{r}
-circme <- circular::mean.circular(all_trial_limits$abs_rads)
-R      <- circular::rho.circular (all_trial_limits$abs_rads)
+```{r abs headings fig, fig.height = 7, fig.width = 7}
+#circme <- circular::mean.circular(all_trial_limits$abs_rads)
+#R      <- circular::rho.circular (all_trial_limits$abs_rads)
 
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-JEB18_tracks %>% filter(video=="GOPR0243") %>%
+JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
   ggplot() + coord_fixed() +
-  geom_path(aes(x=trans_x, y=trans_y,
-                group=vid_ord,colour=vid_ord),
-             alpha=0.3, size=.7) + 
-  geom_point(aes(x=trans_x, y=trans_y,
-                group=vid_ord,colour=vid_ord),
-             alpha=0.1, size=1) +
+  geom_path(aes(x=trans_x, y=trans_y,group=vid_ord,colour=order),
+             alpha=.5, size=.75) + 
+  #geom_point(aes(x=trans_x, y=trans_y,group=vid_ord,colour=arc),
+  #           alpha=.05, size=.5) + 
+  facet_wrap(vars(cond)) +
   annotate("path", color="orange",
   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="blue",
   x=0+.5*cos(seq(0,2*pi,length.out=100)),y=0+.5*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="black",
   x=0+.25*cos(seq(0,2*pi,length.out=100)),y=0+.25*sin(seq(0,2*pi,length.out=100))) +
-  geom_point(data=all_trial_limits, aes(x=x_int,    y=y_int),
-             alpha=0.1, size=3) +
+  geom_point(data=all_trial_limits, aes(x=x_int,y=y_int,group=cond),
+             alpha=.1, size=3) +
   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none") + 
-  geom_segment(aes(x=0,y=0,xend=R*cos(circme),yend=R*sin(circme)),size=2)
+        axis.text=element_blank()) + theme(legend.position = "none") #+ 
+  #geom_segment(aes(x=0,y=0,xend=R*cos(circme),yend=R*sin(circme)),size=2) 
 ```
 
 #### Relative position of tracks with regard to the stimulus
 
-```{r}
-circme <- circular::mean.circular(all_trial_limits$radians)
-R      <- circular::rho.circular (all_trial_limits$radians)
+The trial limits radians and the tracks now align. 
 
+```{r rel headings fig, fig.height = 7, fig.width = 7}
+vid="GOPR3993"
+#circme <- circular::mean.circular(all_trial_limits$radians)
+#R      <- circular::rho.circular (all_trial_limits$radians)
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-JEB18_tracks %>% filter(video=="GOPR0243") %>%
+JEB18_tracks %>% filter(cond=="DoG 40") %>% #filter(video==vid) %>%
   ggplot() + coord_fixed() + 
-  geom_path(aes(x=trans_rho*cos(((pi/2)-rel_theta)), #(pi/2)-
-                y=trans_rho*sin(((pi/2)-rel_theta)), #(pi/2)-
-                group=vid_ord,colour=vid_ord),
-             alpha=0.3, size=.7) + 
-  geom_point(aes(x=trans_rho*cos(rel_theta), #(pi/2)-
-                 y=trans_rho*sin(rel_theta), #(pi/2)-
-                group=vid_ord,colour=vid_ord),
-             alpha=0.1, size=1) +
+  geom_path(aes(x=rel_x, y=rel_y, group=vid_ord,colour=order),alpha=.5,size=.75) + 
+  facet_wrap(vars(cond)) +
   annotate("path", color="orange",
-  x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
+  x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="blue",
-  x=0+.5*cos(seq(0,2*pi,length.out=100)),y=0+.5*sin(seq(0,2*pi,length.out=100))) +
+  x=.5*cos(seq(0,2*pi,length.out=100)),y=.5*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="black",
-  x=0+.25*cos(seq(0,2*pi,length.out=100)),y=0+.25*sin(seq(0,2*pi,length.out=100))) +
+  x=.25*cos(seq(0,2*pi,length.out=100)),y=.25*sin(seq(0,2*pi,length.out=100))) +
   # Stick on final relative headings - not sure why it does't need pi/2 -
-  geom_point(data=all_trial_limits,aes(x=cos(radians),y=sin(radians) ),
-             alpha=0.1, size=3) +
+  geom_point(data=all_trial_limits[
+    all_trial_limits$cond=="DoG 40",],#[all_trial_limits$video==vid,],
+             aes(x=cos(radians),y=sin(radians),
+             shape=1),alpha=.2,size=3) + scale_shape_identity() +
+  geom_point(data=df[df$cond=="DoG 40",],#[df$video==vid,], # data from the paper
+             aes(x=1*cos(heading_rad),y=1*sin(heading_rad),shape=3),alpha=1) +
   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none") + 
-  geom_segment(aes(x=0,y=0,xend=R*cos(circme),yend=R*sin(circme)),size=2)
+        axis.text=element_blank()) + theme(legend.position = "none")
 ```
 
-
+#### 
 
 We will also need a means of plotting the original tracks normalized to the arena width but  not based on the stimulus position.
 
-
-#### Bring in data frame with video names and trial order
-
-```{r}
-df <- read.delim('Diadema_tracks.txt', sep="\t", header = TRUE)
-df %<>% filter(locale=="Tenerife")
-df$locale   <- NULL
-df$species  <- NULL
-
-df$predator <- NULL
-df$heading_rad <- as.circular(df$heading_rad,type="angles",units="radians",
-                      zero=pi/2,rotation="clock", template="none",modulo="asis")
-df$heading_rad[df$heading_rad>pi] <- df$heading_rad[df$heading_rad>pi] - 2*pi
-head(df)
-```
+Using *(pi/2)-radians* works and gives the relative angle. I checked this by watching several videos and cross comparing with the values in the xlsx file and with the output of the plot. 
 
 
-```{r}
-circme <- circular::mean.circular(df$heading_rad)
-R      <- circular::rho.circular(df$heading_rad)
-
-df %>% filter(video=="GOPR0243") %>%
+```{r Headings in paper fig, fig.height = 7, fig.width = 7}
+#circme <- circular::mean.circular(df$heading_rad)
+#R      <- circular::rho.circular(df$heading_rad)
+df %>% #filter(arc %in% c(0,17,40)) %>%
   ggplot() + coord_fixed() +
+  facet_wrap(vars(pattern)) +
   annotate("path", color="orange",
   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
-  geom_point(aes(x=1*cos((pi/2)-heading_rad),y=1*sin((pi/2)-heading_rad)),
-             alpha=0.1, size=3) +
-  xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
+  geom_point(aes(x=1*cos(heading_rad),y=1*sin(heading_rad),
+                 color=pos), alpha=.2, size=3) + 
+  #geom_text(aes(x=.9*cos(heading_rad),y=.9*sin(heading_rad),label=pos)) +
+  xlab('') + ylab('') + theme_classic() + ggtitle('Plot the headings from the paper') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none") + 
-  geom_segment(aes(x=0,y=0,xend=R*cos((pi/2)-circme),yend=R*sin((pi/2)-circme)),size=2)
+        axis.text=element_blank()) + theme(legend.position = "none") #+ 
+  #geom_segment(aes(x=0,y=0,xend=R*cos((pi/2)-circme),yend=R*sin((pi/2)-circme)),size=2)
 ```
 
 
