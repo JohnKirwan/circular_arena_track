@@ -501,11 +501,11 @@ JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
 The trial limits radians and the tracks now align. 
 
 ```{r rel headings fig, fig.height = 7, fig.width = 7}
-vid= "GOPR3993"#"GOPR4017" #
+vid= "GOPR4017"#"GOPR3993"# #
 #circme <- circular::mean.circular(all_trial_limits$radians)
 #R      <- circular::rho.circular (all_trial_limits$radians)
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-JEB18_tracks %>% filter(video==vid) %>%  #  %>% filter(cond=="DoG 40") 
+JEB18_tracks %>% #filter(video==vid) %>%  #  %>% filter(cond=="DoG 40") 
   ggplot() + coord_fixed() + 
   geom_path(aes(x=rel_x, y=rel_y, group=vid_ord,colour=order),alpha=.5,size=.75) + 
   facet_wrap(vars(cond)) +
@@ -516,10 +516,10 @@ JEB18_tracks %>% filter(video==vid) %>%  #  %>% filter(cond=="DoG 40")
   annotate("path", color="black",
   x=.25*cos(seq(0,2*pi,length.out=100)),y=.25*sin(seq(0,2*pi,length.out=100))) +
   # Stick on final relative headings - not sure why it does't need pi/2 -
-  geom_point(data=all_trial_limits[all_trial_limits$video==vid,], # all_trial_limits$cond=="DoG 40",],#[
+  geom_point(data=all_trial_limits,#[all_trial_limits$video==vid,], # all_trial_limits$cond=="DoG 40",],#[
              aes(x=cos(radians),y=sin(radians),
              shape=1),alpha=.2,size=3) + scale_shape_identity() +
-  geom_point(data=df[df$video==vid,], # data from the paper #[df$cond=="DoG 40",],#
+  geom_point(data=df,#[df$video==vid,], # data from the paper #[df$cond=="DoG 40",],#
              aes(x=1*cos(heading_rad),y=1*sin(heading_rad),shape=3),alpha=1) +
   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
@@ -533,20 +533,20 @@ We will also need a means of plotting the original tracks normalized to the aren
 Using *(pi/2)-radians* works and gives the relative angle. I checked this by watching several videos and cross comparing with the values in the xlsx file and with the output of the plot. 
 
 
-```{r Headings in paper fig, fig.height = 7, fig.width = 7}
+```{r Headings in paper fig, eval=FALSE, fig.height=7, fig.width=, include=FALSE}
 #circme <- circular::mean.circular(df$heading_rad)
 #R      <- circular::rho.circular(df$heading_rad)
-df %>% #filter(arc %in% c(0,17,40)) %>%
-  ggplot() + coord_fixed() +
-  facet_wrap(vars(pattern)) +
-  annotate("path", color="orange",
-  x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
-  geom_point(aes(x=1*cos(heading_rad),y=1*sin(heading_rad),
-                 color=pos), alpha=.2, size=3) + 
-  #geom_text(aes(x=.9*cos(heading_rad),y=.9*sin(heading_rad),label=pos)) +
-  xlab('') + ylab('') + theme_classic() + ggtitle('Plot the headings from the paper') +
-  theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none") #+ 
+# df %>% #filter(arc %in% c(0,17,40)) %>%
+#   ggplot() + coord_fixed() +
+#   facet_wrap(vars(pattern)) +
+#   annotate("path", color="orange",
+#   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
+#   geom_point(aes(x=1*cos(heading_rad),y=1*sin(heading_rad),
+#                  color=pos), alpha=.2, size=3) + 
+#   #geom_text(aes(x=.9*cos(heading_rad),y=.9*sin(heading_rad),label=pos)) +
+#   xlab('') + ylab('') + theme_classic() + ggtitle('Plot the headings from the paper') +
+#   theme(axis.line=element_blank(),axis.ticks=element_blank(),
+#         axis.text=element_blank()) + theme(legend.position = "none") #+ 
   #geom_segment(aes(x=0,y=0,xend=R*cos((pi/2)-circme),yend=R*sin((pi/2)-circme)),size=2)
 ```
 
