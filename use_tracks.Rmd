@@ -526,12 +526,6 @@ JEB18_tracks %>% #filter(video==vid) %>%  #  %>% filter(cond=="DoG 40")
         axis.text=element_blank()) + theme(legend.position = "none")
 ```
 
-#### 
-
-We will also need a means of plotting the original tracks normalized to the arena width but  not based on the stimulus position.
-
-Using *(pi/2)-radians* works and gives the relative angle. I checked this by watching several videos and cross comparing with the values in the xlsx file and with the output of the plot. 
-
 
 ```{r Headings in paper fig, eval=FALSE, fig.height=7, fig.width=, include=FALSE}
 #circme <- circular::mean.circular(df$heading_rad)
@@ -554,7 +548,10 @@ Using *(pi/2)-radians* works and gives the relative angle. I checked this by wat
 Write the tracks to a file
 
 ```{r}
-write_csv(trackz_tbl,  file = "tracks_file.csv")
-write_delim(trackz_tbl,file = "tracks_file.txt",delim = "\t")
+write_csv(JEB18_tracks,      file = "tracks_file.csv")
+write_delim(JEB18_tracks,    file = "tracks_file.txt",delim = "\t")
+write_csv(all_trial_limits,  file = "headings_file.csv")
+write_delim(all_trial_limits,file = "headings_file.txt",delim = "\t")
+
 ```
 
