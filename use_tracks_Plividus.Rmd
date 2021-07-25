@@ -22,17 +22,12 @@ library('RColorBrewer')
 Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena. Gets complete track from each set of trials, makes a plot and determines headings.
 
 ```{r}
-#folder <- 'F:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
-folder <- 'tracks/'
-filez  <- list.files(normalizePath(folder))
-# files_df  <- tibble(landmark=list.files(normalizePath(folder))[
-#                     grep('*point01.txt$',list.files(normalizePath(folder)))],
-#                     track=list.files(normalizePath(folder))[
-#                       grep('*point02.txt$',list.files(normalizePath(folder)))])
+folder <- 'D:/sci/2021/P_lividus_adult_vids/tracking/'
+filez  <- list.files(normalizePath(folder),recursive = TRUE)
 
-files_df <- tibble(basename=sub("*_point01.txt", "",  #subset string before exp
-                     list.files(normalizePath(folder))[
-                     grep('*point01.txt$',list.files(normalizePath(folder)))]))
+files_df <-tibble(basename=sub("*_point01.txt","",#subset str before exp
+            list.files(normalizePath(folder),recursive = TRUE)[
+            grep('*point01.txt$',list.files(normalizePath(folder),recursive = TRUE))]))
 
 files_df %<>% mutate(landmark=paste0(basename,"_point01.txt"),
                     track    =paste0(basename,"_point02.txt"))
@@ -44,20 +39,18 @@ tail(files_df)
 ```{r}
 # are there any (predicted) track names not represented in the file list?
 # i.e. landmark files without a matching track file
-if(any(!files_df$track    %in% list.files(normalizePath(folder)))){
+if(any(!files_df$track %in% list.files(normalizePath(folder),recursive = TRUE))){
   stop(print(paste0("The following track file is missing:",
-    files_df$track[which(!files_df$track %in% list.files(normalizePath(folder)))]
-                    )))
+    files_df$track[which(!files_df$track %in% list.files(
+      normalizePath(folder),recursive = TRUE))])))
 }
 
 # are any track files in the file list without a match in the landmark files?
-if(any(!list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
-           normalizePath(folder)))] %in% files_df$track)){
+if(any(!list.files(normalizePath(folder),recursive = TRUE)[grep('*point02.txt$',
+    list.files(normalizePath(folder),recursive = TRUE))] %in% files_df$track)){
   stop(print(paste0("The following track file lacks a counterpart:",
-    list.files(normalizePath(folder))[grep('*point02.txt$',list.files(
-      normalizePath(folder)))]
-        
-                    )))
+    list.files(normalizePath(folder),recursive = TRUE)[grep('*point02.txt$',
+    list.files(normalizePath(folder),recursive = TRUE))])))
 }
 ```
 
@@ -79,7 +72,6 @@ names(landmarks) <- c("frame","x","y")
 head(landmarks)
 
 if(length(landmarks$x) %% 2 == 1){ warning("Odd number of landmarks!") }
-
 num_trials = length(landmarks$x)/2 
 ```
 
@@ -97,10 +89,10 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
 
  num_trials = dim(landmarks)[1]/2 # count number of trials
  # pick out start frame and centre and stimulus coords
- tl <- as_tibble(array(0,dim=c(num_trials,16),
+ tl <- as_tibble(array(0,dim=c(num_trials,18),
     dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
     "last_f","stim_x_0","stim_y_0","stim_theta","r_px","quadrant","video",
-    "x0","y0","x1","y1"))), 
+    "order","vid_ord","x0","y0","x1","y1"))), 
     .name_repair="unique")
   tl$video <- as.character(tl$video)
   
@@ -242,7 +234,7 @@ get_all_animal_pos <- function(landmarks,animal_track,files_df){
     animal_track = read.delim(normalizePath(paste0(folder,'/',files_df$track[i])),
                             sep="\t", header = FALSE)[,1:3]
     names(animal_track) <- c("frame","x","y")
-    landmarks = read.delim(normalizePath(paste0(folder,'/',
+    landmarks <- read.delim(normalizePath(paste0(folder,'/',
                       files_df$landmark[i])),sep="\t", header = FALSE)[,1:3]
     names(landmarks) <- c("frame","x","y")
     if(length(landmarks$x) %% 2 == 1){ warning("Odd number of landmarks!") }
@@ -345,9 +337,6 @@ all_trial_limits$y_int <- intz$y_int
 all_trial_limits$abs_rads <-mapply(atan2,all_trial_limits$y_int,all_trial_limits$x_int)
 # convert these values to be 0 to 2*pi, clockwise
 abs_rads_clock  <- (pi/2) - all_trial_limits$abs_rads
-#all_trial_limits$abs_rads <- as.circular(all_trial_limits$abs_rads, type="angles",
-#                            units="radians",zero=0,rotation="counter",
-#                            template="none", modulo="asis")
 
 all_trial_limits$radians  <- ((pi/2)-all_trial_limits$abs_rads) - ((pi/2)- all_trial_limits$stim_theta)
 all_trial_limits$radians[all_trial_limits$radians < 0] <- all_trial_limits$radians[
@@ -405,9 +394,6 @@ df %<>% filter(locale=="Tenerife")
 df$locale   <- NULL
 df$species  <- NULL
 df$predator <- NULL
-# df$heading_rad <- as.circular(df$heading_rad,type="angles",units="radians",
-#                       zero=pi/2,rotation="clock", template="none",modulo="asis")
-#df$heading_rad[df$heading_rad>pi] <- df$heading_rad[df$heading_rad>pi] - 2*pi
 
 df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
 
@@ -428,18 +414,18 @@ trackz_tbl$type <- as.character(rep("",dim(trackz_tbl)[1]))
 all_trial_limits$arc  <- rep(0,dim(all_trial_limits)[1])
 all_trial_limits$type <- as.character(rep("",dim(all_trial_limits)[1]))
 
-i=1
-while(i <= dim(df)[1]){
-  trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
-  trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
-  all_trial_limits$arc [which(all_trial_limits$video==df$video[i])] <- df$arc[i]
-  all_trial_limits$type[which(all_trial_limits$video==df$video[i])] <- df$type[i]
-  i=i+1
-}
+# i=1
+# while(i <= dim(df)[1]){
+#   trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
+#   trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
+#   all_trial_limits$arc [which(all_trial_limits$video==df$video[i])] <- df$arc[i]
+#   all_trial_limits$type[which(all_trial_limits$video==df$video[i])] <- df$type[i]
+#   i=i+1
+# }
 
 trackz_tbl %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
 all_trial_limits %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
-JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
+#JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
 ```
 
 #### Identify tracks
@@ -447,23 +433,22 @@ JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
 Bring over relevant information from df dataframe to other dataframes
 
 ```{r}
-JEB18_tracks     <- subset(JEB18_tracks, arc %in% c(0,17,40))
-all_trial_limits <- subset(all_trial_limits, arc %in% c(0,17,40))
+#JEB18_tracks     <- subset(JEB18_tracks, arc %in% c(0,17,40))
+#all_trial_limits <- subset(all_trial_limits, arc %in% c(0,17,40))
 ```
 
 Drop all_trial_limits rows which have a type not derived from df
 
 ```{r}
-all_trial_limits <- all_trial_limits[!all_trial_limits$type=="",]
+#all_trial_limits <- all_trial_limits[!all_trial_limits$type=="",]
 ```
 
 Make the arc width a factor
 
 ```{r}
 all_trial_limits$arc <- as.factor(all_trial_limits$arc)
-JEB18_tracks$arc     <- as.factor(JEB18_tracks$arc)
+#JEB18_tracks$arc     <- as.factor(JEB18_tracks$arc)
 ```
-
 
 #### Plotting
 
@@ -480,12 +465,12 @@ Later, use scale_colour_brewer(palette = "Paired")
 #R      <- circular::rho.circular (all_trial_limits$abs_rads)
 
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
+trackz_tbl %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
   ggplot() + coord_fixed() +
-  geom_path(aes(x=trans_x, y=trans_y,group=vid_ord,colour=order),
+  geom_path(aes(x=trans_x, y=trans_y,group=vid_ord),
              alpha=.5, size=.75) + 
-  #geom_point(aes(x=trans_x, y=trans_y,group=vid_ord,colour=arc),
-  #           alpha=.05, size=.5) + 
+  geom_point(aes(x=trans_x, y=trans_y,group=vid_ord),
+             alpha=.05, size=.5) + 
   facet_wrap(vars(cond)) +
   annotate("path", color="orange",
   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
@@ -506,14 +491,11 @@ JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
 The trial limits radians and the tracks now align. 
 
 ```{r rel headings fig, fig.height = 7, fig.width = 7}
-vid= "GOPR4017"#"GOPR3993"# #
-#circme <- circular::mean.circular(all_trial_limits$radians)
-#R      <- circular::rho.circular (all_trial_limits$radians)
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-JEB18_tracks %>% filter(video==vid) %>%  #  %>% filter(cond=="DoG 40") 
+trackz_tbl %>%  #  %>% filter(cond=="DoG 40") 
   ggplot() + coord_fixed() + 
-  geom_path(aes(x=rel_x, y=rel_y, group=vid_ord,colour=order),alpha=.5,size=.75) + 
-  geom_point(aes(x=rel_x, y=rel_y, group=vid_ord,colour=order),alpha=.5,size=2) + 
+  geom_path(aes(x=rel_x, y=rel_y, group=vid_ord),alpha=.5,size=.2) + 
+  geom_point(aes(x=rel_x, y=rel_y, group=vid_ord),alpha=.5,size=.5) + 
   facet_wrap(vars(cond)) +
   annotate("path", color="orange",
   x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
@@ -522,12 +504,9 @@ JEB18_tracks %>% filter(video==vid) %>%  #  %>% filter(cond=="DoG 40")
   annotate("path", color="black",
   x=.25*cos(seq(0,2*pi,length.out=100)),y=.25*sin(seq(0,2*pi,length.out=100))) +
   # Stick on final relative headings - not sure why it does't need pi/2 -
-  geom_point(data=all_trial_limits[all_trial_limits$video==vid,], # all_trial_limits$cond=="DoG 40",],#[
-             aes(x=cos(radians),y=sin(radians),
-             shape=1),alpha=.2,size=3) + scale_shape_identity() +
-  geom_point(data=df[df$video==vid,], # data from the paper #[df$cond=="DoG 40",],#
-             aes(x=1*cos(heading_rad),y=1*sin(heading_rad),shape=3),alpha=1) +
-  xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
+  geom_point(data=all_trial_limits,
+   aes(x=cos(radians),y=sin(radians),shape=1),alpha=.2,size=3)+scale_shape_identity() +
+   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
         axis.text=element_blank()) + theme(legend.position = "none")
 ```
