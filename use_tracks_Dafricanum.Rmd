@@ -397,10 +397,6 @@ This leaves 10 extra trials not represented in the spreadsheet (df) file.
 trackz_tbl <- map_dfr(all_trackz, ~ .x)
 ```
 
-
-
-
-
 #### Line-Circle Intercept.
 
 Works when vector intersects circle.
@@ -540,6 +536,23 @@ trialz <- trialz[!is.na(trialz$radians),]
 trackz_tbl <- trackz_tbl[!is.na(trackz_tbl$rel_theta),]
 ```
 
+Are the tracking files all represented in the data spreadsheet?
+
+```{r}
+# if(any(!file_tbl$basename %in% df$video)){warning("Extra file(s) removed")
+#   file_tbl <- file_tbl[file_tbl$basename %in% df$video,]}
+# #are all videos listed in spreadsheet represented in the dir of tracking files
+# if(any(!df$file %in% file_tbl$basename)){warning("Missing file(s)!")}
+# head(file_tbl)
+
+
+dim(trialz)[1]==dim(df)[1]
+unique(df$trial_set)==unique(trialz$trial_set)
+```
+
+
+
+
 #### Make variables for inner radius relative to the stimulus
 
 Make something close to stimulus relative versions of the inner circle intersects. Make angles +ve real and subtract the stimulus to get the relative angular position of the inner circle intersect. Then, turn into Cartesian coordinates.
@@ -598,11 +611,12 @@ Later, use scale_colour_brewer(palette = "Paired")
 
 ```{r abs headings fig, fig.height = 8, fig.width = 7}
 how_many <- 150
+colz <- c("1"="blue","2"="green","3"="pink","4"="orange")
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
 trackz_tbl %>% #filter(obstacle=="obst") %>% 
  ggplot() + coord_fixed() +
  geom_path(aes(x=trans_x,y=trans_y,group=vid_ord,color=trial_set),
-             size=.5) + 
+             size=.5)  +
  geom_point(aes(x=trans_x, y=trans_y,group=vid_ord,color=trial_set),
              size=.5) + 
   facet_wrap(vars(arc,type),ncol=2) + # obstacle
@@ -621,7 +635,7 @@ trackz_tbl %>% #filter(obstacle=="obst") %>%
  geom_segment(data=trialz,#[trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
    aes(x=x0,y=y0,xend=x_int,yend=y_int,color=trial_set),linetype="dotted") + #,colour=id
   xlab('') + ylab('') + theme_classic() + 
-  ggtitle('Plot absolute tracks') +
+  ggtitle('Plot absolute tracks') + 
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
         axis.text=element_blank()) + theme(legend.position = "none") + 
    theme(plot.title=element_text(size=14,hjust=0.5), 
