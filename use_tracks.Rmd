@@ -23,6 +23,7 @@ Uses stimulus centre and point opposite stimulus centre as markers for the unit 
 
 ```{r}
 #folder <- 'F:/sci/PhD/Urchins/Diadema/Tenerife-2016/tracks/'
+radius_criterion=="first_past"
 folder <- 'tracks/'
 filez  <- list.files(normalizePath(folder))
 # files_df  <- tibble(landmark=list.files(normalizePath(folder))[
@@ -82,7 +83,6 @@ if(length(landmarks$x) %% 2 == 1){ warning("Odd number of landmarks!") }
 
 num_trials = length(landmarks$x)/2 
 ```
-
 
 ## The files 
 
@@ -203,17 +203,34 @@ get_animal_pos <- function(trial_limits,animal_track){
    XY$rel_y <- XY$trans_rho*sin(XY$rel_theta)
    trackz[[i]] <- XY
    # assign tracks less than 40% of arena to be empty
-   if(min(XY$trans_rho>.4)){trackz[[i]] <- "Track starts too far from centre"}
+   if(min(XY$trans_rho>.5)){warning("Track starts too far from centre")}
    if(any(XY$trans_rho> 1)){warning('Track exceeds arena width!')}
    
-#if(!any(XY[,8] < .25)){warning(paste0("Tracks begin >1/4 rad from centre for trial"))}
-   trial_limits$x0[i] <- XY$trans_x[which.min(abs(XY$trans_rho - .25))]
-   trial_limits$y0[i] <- XY$trans_y[which.min(abs(XY$trans_rho - .25))]
-   
-   trial_limits$x1[i] <- XY$trans_x[which.min(abs(XY$trans_rho - .5))]
-   trial_limits$y1[i] <- XY$trans_y[which.min(abs(XY$trans_rho - .5))]
    trial_limits$order[i]   <- as.character(i) 
    trial_limits$vid_ord[i] <- paste0(trial_limits[i,12],"_",i)
+   
+   if(radius_criterion=="first_past"){ # if taking 1st point outside radii
+      if(!any(XY$trans_rho > circ0)){warning('NO PTS BEYOND INNER CIRC!!')} 
+      trial_limits$x0[i] <- XY$trans_x[XY$trans_rho >= circ0][1] #get 1st pts 
+      trial_limits$y0[i] <- XY$trans_y[XY$trans_rho >= circ0][1] #beyond inner circ
+      # if pts both sides of outer circ
+      if(any(XY$trans_rho <= circ1) & any(XY$trans_rho > circ1)){ 
+        trial_limits$x1[i] <- XY$trans_x[XY$trans_rho >= circ1][1]
+        trial_limits$y1[i] <- XY$trans_y[XY$trans_rho >= circ1][1]
+      }else if(!any(XY$trans_rho > circ1)){warning("NO POINT BEYOND OUTER RADIUS!!!")
+        trial_limits$x1[i] <- XY$trans_x[which.max(XY$trans_rho)] # get most distant point
+        trial_limits$y1[i] <- XY$trans_y[which.max(XY$trans_rho)] # get most distant point
+      }else{warning("NO POINT WITHIN OUTER RADIUS!!!")
+        trial_limits$x1[i] <- XY$trans_x[i+1] # take the 2nd points outside
+        trial_limits$y1[i] <- XY$trans_y[i+1] # as x0,y0 will be 1st
+      }
+   }else{
+    trial_limits$x0[i] <- XY$trans_x[which.min(abs(XY$trans_rho - circ0))]
+    trial_limits$y0[i] <- XY$trans_y[which.min(abs(XY$trans_rho - circ0))]
+    trial_limits$x1[i] <- XY$trans_x[which.min(abs(XY$trans_rho - circ1))] #.5
+    trial_limits$y1[i] <- XY$trans_y[which.min(abs(XY$trans_rho - circ1))]
+   }
+   
    i = i + 1
  }
  return(list(trackz,trial_limits)) # norm to radius
@@ -250,14 +267,14 @@ get_all_animal_pos <- function(landmarks,animal_track,files_df){
     trial_track_list <- get_animal_pos(trial_limits,animal_track) # run get_animal_pos
      if(i == 1){  
        all_trackz       <- trial_track_list[[1]] # populate with first list
-       all_trial_limits <- trial_track_list[[2]] # first instance from above
+       trialz <- trial_track_list[[2]] # first instance from above
      } else {
        all_trackz       <- c(all_trackz,trial_track_list[[1]])
-       all_trial_limits <- rbind(all_trial_limits,trial_track_list[[2]])
+       trialz <- rbind(trialz,trial_track_list[[2]])
     }
     i <- i + 1
   }
- trackz_n_limits <- list(all_trackz,all_trial_limits) 
+ trackz_n_limits <- list(all_trackz,trialz) 
  return(trackz_n_limits)
 }
 ```
@@ -270,18 +287,18 @@ tail(all_trackz[[1]])
 ```
 
 ```{r}
-all_trial_limits <- trackz_n_limits[[2]]
-#all_trial_limits$stim_theta <- as.circular(all_trial_limits$stim_theta)
-tail(all_trial_limits)
+trialz <- trackz_n_limits[[2]]
+#trialz$stim_theta <- as.circular(trialz$stim_theta)
+tail(trialz)
 ```
 Delete those rows for which the first and second circles are the same.
 
 ```{r}
-idx <- which(all_trial_limits$x0==all_trial_limits$x1 & all_trial_limits$y0==all_trial_limits$y1)
+idx <- which(trialz$x0==trialz$x1 & trialz$y0==trialz$y1)
 all_trackz[idx] <- NULL
-all_trial_limits <- all_trial_limits[-c(idx),]
+trialz <- trialz[-c(idx),]
 print(paste(length(all_trackz),"tracks post culling"))
-print(paste(dim(all_trial_limits)[1],"trials in limits list post culling"))
+print(paste(dim(trialz)[1],"trials in limits list post culling"))
 ```
 
 Make tibble for tracks rather than list
@@ -335,29 +352,27 @@ Get the headings from intersection with the unit circle.
 Use atan2 to get the headings in radians. Then, having changed the class to circular, set them so that 0 refers to the stimulus midpoint and the rotation is clockwise. 
 
 ```{r}
-intz <- pmap_dfr(list(
-  all_trial_limits$x0,all_trial_limits$y0,
-                    all_trial_limits$x1,all_trial_limits$y1), linecirc)
+intz <- pmap_dfr(list(trialz$x0,trialz$y0,trialz$x1,trialz$y1), linecirc)
 
-all_trial_limits$x_int <- intz$x_int
-all_trial_limits$y_int <- intz$y_int
+trialz$x_int <- intz$x_int
+trialz$y_int <- intz$y_int
 
-all_trial_limits$abs_rads <-mapply(atan2,all_trial_limits$y_int,all_trial_limits$x_int)
+trialz$abs_rads <-mapply(atan2,trialz$y_int,trialz$x_int)
 # convert these values to be 0 to 2*pi, clockwise
-abs_rads_clock  <- (pi/2) - all_trial_limits$abs_rads
-#all_trial_limits$abs_rads <- as.circular(all_trial_limits$abs_rads, type="angles",
+abs_rads_clock  <- (pi/2) - trialz$abs_rads
+#trialz$abs_rads <- as.circular(trialz$abs_rads, type="angles",
 #                            units="radians",zero=0,rotation="counter",
 #                            template="none", modulo="asis")
 
-all_trial_limits$radians  <- ((pi/2)-all_trial_limits$abs_rads) - ((pi/2)- all_trial_limits$stim_theta)
-all_trial_limits$radians[all_trial_limits$radians < 0] <- all_trial_limits$radians[
-  all_trial_limits$radians < 0] + 2*pi
-all_trial_limits$radians <- (pi/2) - all_trial_limits$radians
+trialz$radians  <- ((pi/2)-trialz$abs_rads) - ((pi/2)- trialz$stim_theta)
+trialz$radians[trialz$radians < 0] <- trialz$radians[
+  trialz$radians < 0] + 2*pi
+trialz$radians <- (pi/2) - trialz$radians
 
-all_trial_limits$radians[all_trial_limits$radians > pi] <- all_trial_limits$radians[
-  all_trial_limits$radians > pi] - 2*pi
-all_trial_limits$radians[all_trial_limits$radians < -pi] <- all_trial_limits$radians[
-  all_trial_limits$radians < -pi] + 2*pi
+trialz$radians[trialz$radians > pi] <- trialz$radians[
+  trialz$radians > pi] - 2*pi
+trialz$radians[trialz$radians < -pi] <- trialz$radians[
+  trialz$radians < -pi] + 2*pi
 ```
 
 Temporary fix - remove observations with rho value greater than 1. Remove cases where there were more than 4 trials in the same video.
@@ -365,20 +380,20 @@ Temporary fix - remove observations with rho value greater than 1. Remove cases 
 ```{r}
 trackz_tbl <- trackz_tbl[trackz_tbl$trans_rho <= 1,]
 trackz_tbl <- trackz_tbl[!trackz_tbl$order > 4,]
-all_trial_limits <- all_trial_limits[!all_trial_limits$order > 4,]
+trialz <- trialz[!trialz$order > 4,]
 ```
 
 #### Radian conversion
 
 ```{r}
 ## change top of arena to be at zero and rotation clockwise
-# all_trial_limits$abs_rads <- conversion.circular(
-#                             all_trial_limits$abs_rads, type="angles",
+# trialz$abs_rads <- conversion.circular(
+#                             trialz$abs_rads, type="angles",
 #                             units="radians",zero=pi/2,rotation="clock",
 #                             template="none", modulo="asis")
 # 
-# all_trial_limits$radians <- conversion.circular(
-#                             all_trial_limits$radians, type="angles",
+# trialz$radians <- conversion.circular(
+#                             trialz$radians, type="angles",
 #                             units="radians",zero=pi/2,rotation="clock",
 #                             template="none", modulo="asis")
 # 
@@ -425,20 +440,20 @@ Check which trails are also in df
  # which track rows shares vid name with df
 trackz_tbl$arc  <- rep(0,dim(trackz_tbl)[1])
 trackz_tbl$type <- as.character(rep("",dim(trackz_tbl)[1]))
-all_trial_limits$arc  <- rep(0,dim(all_trial_limits)[1])
-all_trial_limits$type <- as.character(rep("",dim(all_trial_limits)[1]))
+trialz$arc  <- rep(0,dim(trialz)[1])
+trialz$type <- as.character(rep("",dim(trialz)[1]))
 
 i=1
 while(i <= dim(df)[1]){
   trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
   trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
-  all_trial_limits$arc [which(all_trial_limits$video==df$video[i])] <- df$arc[i]
-  all_trial_limits$type[which(all_trial_limits$video==df$video[i])] <- df$type[i]
+  trialz$arc [which(trialz$video==df$video[i])] <- df$arc[i]
+  trialz$type[which(trialz$video==df$video[i])] <- df$type[i]
   i=i+1
 }
 
 trackz_tbl %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
-all_trial_limits %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
+trialz %<>% unite("cond", type:arc,remove=FALSE, sep=" ")
 JEB18_tracks <- trackz_tbl[which(trackz_tbl$video %in% df$video),]
 ```
 
@@ -448,19 +463,19 @@ Bring over relevant information from df dataframe to other dataframes
 
 ```{r}
 JEB18_tracks     <- subset(JEB18_tracks, arc %in% c(0,17,40))
-all_trial_limits <- subset(all_trial_limits, arc %in% c(0,17,40))
+trialz <- subset(trialz, arc %in% c(0,17,40))
 ```
 
-Drop all_trial_limits rows which have a type not derived from df
+Drop trialz rows which have a type not derived from df
 
 ```{r}
-all_trial_limits <- all_trial_limits[!all_trial_limits$type=="",]
+trialz <- trialz[!trialz$type=="",]
 ```
 
 Make the arc width a factor
 
 ```{r}
-all_trial_limits$arc <- as.factor(all_trial_limits$arc)
+trialz$arc <- as.factor(trialz$arc)
 JEB18_tracks$arc     <- as.factor(JEB18_tracks$arc)
 ```
 
@@ -476,8 +491,8 @@ Later, use scale_colour_brewer(palette = "Paired")
 #### Absolute position of tracks with regard to the arena (not the stimulus)
 
 ```{r abs headings fig, fig.height = 7, fig.width = 7}
-#circme <- circular::mean.circular(all_trial_limits$abs_rads)
-#R      <- circular::rho.circular (all_trial_limits$abs_rads)
+#circme <- circular::mean.circular(trialz$abs_rads)
+#R      <- circular::rho.circular (trialz$abs_rads)
 
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
 JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
@@ -493,7 +508,7 @@ JEB18_tracks %>% group_by(cond) %>% #filter(video=="GOPR3997") %>%
   x=0+.5*cos(seq(0,2*pi,length.out=100)),y=0+.5*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="black",
   x=0+.25*cos(seq(0,2*pi,length.out=100)),y=0+.25*sin(seq(0,2*pi,length.out=100))) +
-  geom_point(data=all_trial_limits, aes(x=x_int,y=y_int,group=cond),
+  geom_point(data=trialz, aes(x=x_int,y=y_int,group=cond),
              alpha=.1, size=3) +
   xlab('') + ylab('') + theme_classic() + ggtitle('Plot all tracks simultaneously') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
@@ -507,8 +522,8 @@ The trial limits radians and the tracks now align.
 
 ```{r rel headings fig, fig.height = 7, fig.width = 7}
 vid= "GOPR4017"#"GOPR3993"# #
-#circme <- circular::mean.circular(all_trial_limits$radians)
-#R      <- circular::rho.circular (all_trial_limits$radians)
+#circme <- circular::mean.circular(trialz$radians)
+#R      <- circular::rho.circular (trialz$radians)
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
 JEB18_tracks %>% #filter(video==vid) %>%  #  %>% filter(cond=="DoG 40") 
   ggplot() + coord_fixed() + 
@@ -521,7 +536,7 @@ JEB18_tracks %>% #filter(video==vid) %>%  #  %>% filter(cond=="DoG 40")
   annotate("path", color="black",
   x=.25*cos(seq(0,2*pi,length.out=100)),y=.25*sin(seq(0,2*pi,length.out=100))) +
   # Stick on final relative headings - not sure why it does't need pi/2 -
-  geom_point(data=all_trial_limits,#[all_trial_limits$video==vid,], # all_trial_limits$cond=="DoG 40",],#[
+  geom_point(data=trialz,#[trialz$video==vid,], # trialz$cond=="DoG 40",],#[
              aes(x=cos(radians),y=sin(radians),
              shape=1),alpha=.2,size=3) + scale_shape_identity() +
   geom_point(data=df,#[df$video==vid,], # data from the paper #[df$cond=="DoG 40",],#
@@ -555,8 +570,8 @@ Write the tracks to a file
 ```{r}
 write_csv(JEB18_tracks,      file = "tracks_file.csv")
 write_delim(JEB18_tracks,    file = "tracks_file.txt",delim = "\t")
-write_csv(all_trial_limits,  file = "headings_file.csv")
-write_delim(all_trial_limits,file = "headings_file.txt",delim = "\t")
+write_csv(trialz,  file = "headings_file.csv")
+write_delim(trialz,file = "headings_file.txt",delim = "\t")
 
 ```
 

@@ -21,16 +21,12 @@ library('RColorBrewer')
 Uses stimulus centre and point opposite stimulus centre as markers for the unit circle on arena. Gets complete track from each set of trials, makes a plot and determines headings.
 
 ```{r}
-folder <- 'D:/sci/2021/P_lividus_adult_vids/tracking/'
-filez  <- list.files(normalizePath(folder),recursive = TRUE)
-
-file_tbl <-tibble(basename=sub("*_point01.txt","",#subset str before exp
-            list.files(normalizePath(folder),recursive = TRUE)[
-            grep('*point01.txt$',list.files(normalizePath(folder),recursive = TRUE))]))
-
+folder <- 'tracks/'
+filez  <- list.files(normalizePath(folder),recursive=TRUE)
+file_tbl <- tibble(basename=sub("*_point01.txt","",#subset string before exp
+             filez[grep('*point01.txt$',filez)]))
 file_tbl %<>% mutate(landmark=paste0(basename,"_point01.txt"),
                     track    =paste0(basename,"_point02.txt"))
-
 tail(file_tbl)
 ```
 
@@ -40,11 +36,11 @@ Define the radius of the inner circle.
 
 The radius criterion decides whether the first point with a radius larger than the specified inner and outer radii is used or whether the nearest point either side of the radius is used.
 
-```{r}
-circ0 <- .2#.25#.2 # proportion of inner radius covered by inner pt
-circ1 <- .4 #.5#.4 # proportion of inner radius covered by outer pt
-radius_criterion   <- "first_past" # "nearest"
-stim_mid_criterion <- "mid_inflection" #"dark_trough" #
+```{r Basic criteria}
+circ0 <- .25#.25#.2 # proportion of inner radius covered by inner pt
+circ1 <- .5 #.5#.4 # proportion of inner radius covered by outer pt
+radius_criterion   <- "first_past"     #"nearest"
+stim_mid_criterion <- "dark_trough"#"mid_inflection" 
 ```
 
 Make functions to bring angle values back into the fold
@@ -74,52 +70,68 @@ rad_shepherd_clock <- function(theta){  if(theta < 0){theta <- theta + 2*pi
 
 Obst means obstructed - there was initially an obstacle in the way.
 
+
 ```{r}
-df <- read_csv('Pl_adult_trials_list.csv')
-df$obstacle[df$obstacle=="none"]   <- "unobst"
-df$obstacle[df$obstacle=="marbles"] <- "obst"
-df %<>% unite("cond", c(type,arc,obstacle), remove = FALSE, sep="_")
+df <- read.delim('Diadema_tracks.txt', sep="\t", header = TRUE)
+df %<>% filter(locale=="Tenerife")
+df$locale   <- NULL
+df$species  <- NULL
+df$predator <- NULL
+
+df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
+
+df$type[df$type=="grey control"] <- "control"
+df$pattern[df$pattern=="grey control"] <- "control"
+df$heading_rad <- (pi/2) - df$heading_rad # unit circle rotation and zero
+df$radians[df$radians < 0] <- df$radians[ df$radians < 0] + 2*pi
+df %<>% unite("cond", type:arc, remove = FALSE, sep=" ")
 head(df)
-if(any(!file_tbl$basename %in% df$file)){warning("Missing file")}
-if(any(!df$file %in% file_tbl$basename)){warning("Missing file")}
+```
+
+Are there any (predicted) track names not represented in the file list? i.e. landmark files without a matching track file?
+
+```{r}
+if(any(!file_tbl$track %in% filez)){
+  stop(print(paste0("The following track file is missing:",
+    file_tbl$track[which(!file_tbl$track %in% filez)])))   }
+```
+
+Are any track files in the file list without a match in the landmark files?
+
+```{r}
+if(any(!filez[grep('*point02.txt$',filez)] %in% file_tbl$track)){
+ stop(print(paste0("The following track file lacks a counterpart: ",
+   filez[!filez[grep('*point02.txt$',filez)] %in% file_tbl$track] )))  }
+```
+
+Are the tracking files all represented in the data spreadsheet?
+
+```{r}
+if(any(!file_tbl$basename %in% df$video)){warning("Extra file(s) removed")
+  file_tbl <- file_tbl[file_tbl$basename %in% df$video,]}
+#are all videos listed in spreadsheet represented in the dir of tracking files
+if(any(!df$file %in% file_tbl$basename)){warning("Missing file(s)!")}
+head(file_tbl)
 ```
 
 Add part above to put trial, cond, type, arc, obstacle into file_tbl and therefore to trackz_tbl and trialz.
 
 ```{r}
 # which track rows shares vid name with df
-file_tbl$arc  <- rep(0,dim(file_tbl)[1])
-file_tbl$type <- as.character(rep("",dim(file_tbl)[1]))
-file_tbl$obstacle <- as.character(rep("",dim(file_tbl)[1]))
-file_tbl$id       <- as.character(rep("",dim(file_tbl)[1]))
+file_tbl$arc       <- as.character(rep("",dim(file_tbl)[1]))
+file_tbl$type       <- as.character(rep("",dim(file_tbl)[1]))
+file_tbl$trial_set  <- as.character(rep("",dim(file_tbl)[1]))
 
 i=1
 while(i <= dim(df)[1]){
- file_tbl$arc [which(file_tbl$basename==df$file[i])] <- df$arc[i]
- file_tbl$type[which(file_tbl$basename==df$file[i])] <- df$type[i]
- file_tbl$obstacle[which(file_tbl$basename==df$file[i])] <- df$obstacle[i]
- file_tbl$id[which(file_tbl$basename==df$file[i])] <- df$id[i]
- i=i+1      }
+ file_tbl$arc [which(file_tbl$basename==df$video[i])]      <- df$arc[i]
+ file_tbl$type[which(file_tbl$basename==df$video[i])]      <- df$type[i]
+ file_tbl$trial_set[which(file_tbl$basename==df$video[i])] <- df$trial_set[i]
+ i=i+1    }
 
-file_tbl       %<>% unite("cond",c(type,arc,obstacle),remove=FALSE, sep="_")
+file_tbl   %<>% unite("cond",c(type,arc),remove=FALSE, sep="_")
 ```
 
-
-```{r}
-# are there any (predicted) track names not represented in the file list?
-# i.e. landmark files without a matching track file
-if(any(!file_tbl$track %in% list.files(normalizePath(folder),recursive = TRUE))){
-  stop(print(paste0("The following track file is missing:",
-    file_tbl$track[which(!file_tbl$track %in% list.files(
-      normalizePath(folder),recursive = TRUE))])))                            }
-
-# are any track files in the file list without a match in the landmark files?
-if(any(!list.files(normalizePath(folder),recursive = TRUE)[grep('*point02.txt$',
-    list.files(normalizePath(folder),recursive = TRUE))] %in% file_tbl$track)){
-  stop(print(paste0("The following track file lacks a counterpart:",
-    list.files(normalizePath(folder),recursive = TRUE)[grep('*point02.txt$',
-    list.files(normalizePath(folder),recursive = TRUE))])))                   }
-```
 
 Try with first file to get the track
 
@@ -142,7 +154,6 @@ if(length(landmarks$x) %% 2 == 1){ warning("Odd number of landmarks!") }
 num_trials = length(landmarks$x)/2 
 ```
 
-
 ## The files 
 
 With the assignment pipe *%<>%*, the variable is assigned to itself at the end.The radius of the circle based on the stimulus distance is *r_px*. atan2 outputs angles in radians according to the unit cicle from -pi to pi.
@@ -156,13 +167,12 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
 
  num_trials = dim(landmarks)[1]/2 # count number of trials
  # pick out start frame and centre and stimulus coords
- tl <- as_tibble(array(0,dim=c(num_trials,18),
+ tl <- as_tibble(array(0,dim=c(num_trials,21),
     dimnames = list(NULL, c("first_f","orig_x","orig_y","stim_x","stim_y",
     "last_f","stim_x_0","stim_y_0","stim_theta","r_px","quadrant","video",
-    "order","vid_ord","x0","y0","x1","y1"))), 
+    "order","vid_ord","x0","y0","x1","y1","arc","type","trial_set"))), #
     .name_repair="unique")
   tl$video <- as.character(tl$video)
-  
   landmarks$y <- - landmarks$y # invert y axis to read from bottom to top
   
   i = 1 
@@ -175,28 +185,26 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
        if (i < num_trials){
         tl$last_f[i] <- as.numeric(landmarks[((i+1)*2)-1,1]-1)# trial i last frame
      } else { tl$last_f[i]  <- max(animal_track[,1]) } # max along dimension 1 
-  i = i + 1
-  }
-  
- tl$video    <- file_tbl[[vid_num,1]]
- tl$arc      <- file_tbl$arc[file_tbl$basename==tl$video]
- tl$type     <- file_tbl$type[file_tbl$basename==tl$video]
- tl$obstacle <- file_tbl$obstacle[file_tbl$basename==tl$video]
- tl$id       <- file_tbl$id[file_tbl$basename==tl$video]
- 
+
+ ### ATTEMPTING TO MOVE THIS BACK INTO LOOP  
+ tl$video[i]     <- file_tbl[[vid_num,1]]
+ tl$arc[i]       <- file_tbl$arc[file_tbl$basename==tl$video[i]]
+ tl$type[i]      <- file_tbl$type[file_tbl$basename==tl$video[i]]
+ tl$trial_set[i] <- file_tbl$trial_set[file_tbl$basename==tl$video[i]]
+   i = i + 1  }
+
  tl$stim_x_0 <- tl$stim_x - tl$orig_x # stimulus cart coords - orig
  tl$stim_y_0 <- tl$stim_y - tl$orig_y
  tl$stim_theta <- atan2(tl$stim_y_0,tl$stim_x_0) 
- tl$r_px     <- sqrt((tl$stim_x_0)^2+(tl$stim_y_0)^2) # pixel radius
+ tl$r_px       <- sqrt((tl$stim_x_0)^2+(tl$stim_y_0)^2) # pixel radius
  # if the stimulus centre is set to the midpoint, shift all stimulus positions accordingly
- if(stim_mid_criterion=="mid_inflection" & tl$type[1]=="Herm"){    # shift .5 T clockwise
+ if(stim_mid_criterion=="mid_inflection" & tl$type[1]=="Herm"){#shift .5T clockwise
    # subtracting angles only works in +ve space
    stim_theta    <- mapply(rad2clock, tl$stim_theta) # change to clock
    stim_theta    <- stim_theta - tl$arc*(pi/360) # add T/2 to shift clockwise 
    stim_theta    <- mapply(rad_shepherd_clock,stim_theta) #herd into 0 to 2*pi
    tl$stim_theta <- mapply(rad_unclock,stim_theta) # back to unit circle
  }
- ##### MAY NEED TO REMAKE THESE BELOW!
  #tl$stim_x_0 <- tl$stim_x_0 / tl$r_px # standardize by the radius 
  #tl$stim_y_0 <- tl$stim_y_0 / tl$r_px # standardize by the radius 
  tl$stim_x_0  <- cos(tl$stim_theta)
@@ -229,7 +237,6 @@ Get limits from first video
 ```{r}
 trial_limits <- get_trial_limits(landmarks,animal_track,file_tbl,1) #
 ```
-
 
 #### Get animal tracks in polar terms relative to the stimulus
 
@@ -278,14 +285,13 @@ get_animal_pos <- function(trial_limits,animal_track){
    XY$rel_y     <- XY$trans_rho*sin(XY$rel_theta)
    trackz[[i]]  <- XY
    # assign tracks less than 40% of arena to be empty
-   if(min(XY$trans_rho>.4)){trackz[[i]] <- "Track starts too far from centre"
+   if(min(XY$trans_rho>.4)){
     warning(paste('Track starts too far from centre:'),XY$video[1])}
    if(any(XY$trans_rho> 1)){
     warning(paste('Track exceeds arena width: '),XY$video[1])}
    
    trial_limits$order[i]   <- as.character(i) 
    trial_limits$vid_ord[i] <- paste0(trial_limits[i,12],"_",i)
-   
 
   if(radius_criterion=="first_past"){ # if taking 1st point outside radii
   if(!any(XY$trans_rho > circ0)){warning('NO PTS BEYOND INNER CIRC!!')} 
@@ -295,10 +301,11 @@ get_animal_pos <- function(trial_limits,animal_track){
   if(any(XY$trans_rho <= circ1) & any(XY$trans_rho > circ1)){ 
     trial_limits$x1[i] <- XY$trans_x[XY$trans_rho >= circ1][1]
     trial_limits$y1[i] <- XY$trans_y[XY$trans_rho >= circ1][1]
-  }else if(!any(XY$trans_rho > circ1)){warning("NO POINT BEYOND OUTER RADIUS!!!")
+  }else if(!any(XY$trans_rho > circ1)){
+    warning(paste("NO POINT BEYOND OUTER RADIUS!!!:",trial_limits$vid_ord[i]))
     trial_limits$x1[i] <- XY$trans_x[which.max(XY$trans_rho)] # get most distant point
     trial_limits$y1[i] <- XY$trans_y[which.max(XY$trans_rho)] # get most distant point
-  }else{warning("NO POINT WITHIN OUTER RADIUS!!!")
+  }else{warning(paste("NO POINT WITHIN OUTER RADIUS!!!",trial_limits$vid_ord[i]))
     trial_limits$x1[i] <- XY$trans_x[i+1] # take the 2nd points outside
     trial_limits$y1[i] <- XY$trans_y[i+1] # as x0,y0 will be 1st
   }
@@ -308,7 +315,6 @@ get_animal_pos <- function(trial_limits,animal_track){
     trial_limits$x1[i] <- XY$trans_x[which.min(abs(XY$trans_rho - circ1))] #.5
     trial_limits$y1[i] <- XY$trans_y[which.min(abs(XY$trans_rho - circ1))]
   }
-
    i = i + 1
  }
  return(list(trackz,trial_limits)) # norm to radius
@@ -372,24 +378,27 @@ tail(trialz)
 
 #### Find cases where the inner and outer radii don't differ
 
-This has stopped working to remove those trials - that's OK as identifying them is more important.
+None of thse files are in the spreadsheet list and they can be removed. 
 
 ```{r}
+print(paste(dim(trialz)[1],"trials in limits list pre culling"))
 idx <- which(trialz$x0==trialz$x1 & trialz$y0==trialz$y1)
-if(length(idx) > 0){warning(paste("Trials",idx,"have errors!"))}
-#all_trackz[idx] <- NULL
-##### LEAVE OUT FOR MOMENT!
-#trialz <- trialz[-c(idx),] 
-## something wrong with this line!
+if(length(idx) > 0){warning(paste("Trial",idx,"has errors!"))
+  all_trackz[idx] <- NULL
+  trialz <- trialz[-c(idx),] }
 print(paste(length(all_trackz),"tracks post culling"))
 print(paste(dim(trialz)[1],"trials in limits list post culling"))
 ```
+This leaves 10 extra trials not represented in the spreadsheet (df) file.
 
-Make tibble for tracks rather than list
+#### Make tibble for tracks rather than list
 
 ```{r}
 trackz_tbl <- map_dfr(all_trackz, ~ .x)
 ```
+
+
+
 
 
 #### Line-Circle Intercept.
@@ -415,7 +424,7 @@ linecirc <- function(x0,y0,x1,y1){
   # 1st and 2nd rows of ints correspond to 1st and 2nd root respectively
   ints <- rbind(unlist(c( t[1]*(x1 - x0) + x0, t[1]*(y1 - y0) + y0)),
                 unlist(c( t[2]*(x1 - x0) + x0, t[2]*(y1 - y0) + y0)))
-            
+   
   d <- c(sqrt(ints[1,1]^2 + ints[1,2]^2),sqrt(ints[2,1]^2 + ints[2,2]^2))
   if(all.equal(d[1],d[2])==FALSE){warning("Intersect is off unit circle!")}
   # 1st and 2nd rows of dist2track correspond to 1st and 2nd root respectively
@@ -431,7 +440,7 @@ linecirc <- function(x0,y0,x1,y1){
 }
 ```
 
-Get the headings from intersection with the unit circle.
+#### Get the headings from intersection with the unit circle.
 
 Use atan2 to get the headings in radians. Then, having changed the class to circular, set them so that 0 refers to the stimulus midpoint and the rotation is clockwise. 
 
@@ -479,42 +488,56 @@ while(i <= dim(trialz)[1]){
 }
 ```
 
-Temporary fix - remove observations with rho value greater than 1. Remove cases where there were more than 4 trials in the same video.
+Temporary fix - remove observations with rho value greater than 1. 
 
 ```{r}
 trackz_tbl <- trackz_tbl[trackz_tbl$trans_rho <= 1,]
-trackz_tbl <- trackz_tbl[!trackz_tbl$order > 4,]
-trialz <- trialz[!trialz$order > 4,]
 ```
-
 
 Check which trails are also in df
 
 ```{r}
 # which track rows shares vid name with df
-trackz_tbl$arc  <- rep(0,dim(trackz_tbl)[1])
-trackz_tbl$type <- as.character(rep("",dim(trackz_tbl)[1]))
-trackz_tbl$obstacle <- as.character(rep("",dim(trackz_tbl)[1]))
-trackz_tbl$id <- as.character(rep("",dim(trackz_tbl)[1]))
-
-trialz$arc  <- rep(0,dim(trialz)[1])
-trialz$type <- as.character(rep("",dim(trialz)[1]))
-trialz$obstacle <- as.character(rep("",dim(trialz)[1]))
+trackz_tbl$arc       <- rep(0,dim(trackz_tbl)[1])
+trackz_tbl$type      <- as.character(rep("",dim(trackz_tbl)[1]))
+trackz_tbl$trial_set <- as.character(rep("",dim(trackz_tbl)[1]))
 
 i=1
 while(i <= dim(df)[1]){
- trackz_tbl$arc [which(trackz_tbl$video==df$file[i])] <- df$arc[i]
- trackz_tbl$type[which(trackz_tbl$video==df$file[i])] <- df$type[i]
- trackz_tbl$obstacle[which(trackz_tbl$video==df$file[i])] <- df$obstacle[i]
- trackz_tbl$id[which(trackz_tbl$video==df$file[i])] <- df$id[i]
- trialz$arc [which(trialz$video==df$file[i])]     <- df$arc[i]
- trialz$type[which(trialz$video==df$file[i])]     <- df$type[i]
- trialz$obstacle[which(trialz$video==df$file[i])] <- df$obstacle[i]
+ trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
+ trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
+ trackz_tbl$trial_set[which(trackz_tbl$video==df$video[i])] <- df$trial_set[i]
  i=i+1
 }
 
-trackz_tbl %<>% unite("cond",c(type,arc,obstacle),remove=FALSE, sep=" ")
-trialz     %<>% unite("cond",c(type,arc,obstacle),remove=FALSE, sep=" ")
+trackz_tbl %<>% unite("cond",c(type,arc),remove=FALSE, sep=" ")
+trialz     %<>% unite("cond",c(type,arc),remove=FALSE, sep=" ")
+```
+
+
+> Sets for which there were not four completed trials (e.g. due to a loss of motivation) were excluded from analysis.
+
+```{r}
+i=1
+w <- unique(trialz$trial_set) # new variable as we are deleting rows from trials
+while(i <= length(w)){
+  if(dim(trialz[trialz$trial_set==w[i],])[1] < 4){
+    warning(paste('Fewer than 4 trials in set:',w[i]))
+    trialz$radians[trialz$trial_set==w[i]]         <- NA
+    trackz_tbl$rel_theta[trackz_tbl$trial_set==w[i]] <- NA
+  } else {
+  if(dim(trialz[trialz$trial_set==w[i],])[1] > 4){
+    warning(paste('More than 4 trials in set:',w[i])) }
+  }   
+  i=i+1
+}
+```
+
+Remove those sets entirely
+
+```{r}
+trialz <- trialz[!is.na(trialz$radians),]
+trackz_tbl <- trackz_tbl[!is.na(trackz_tbl$rel_theta),]
 ```
 
 #### Make variables for inner radius relative to the stimulus
@@ -531,15 +554,6 @@ trialz$rel_x0   <- trialz$rho0*cos(rel_circ0_theta)
 trialz$rel_y0   <- trialz$rho0*sin(rel_circ0_theta)
 ```
 
-
-Make the arc width a factor. This doesn't seem to influence the plotting order and may be redundant.
-
-```{r}
-trackz_tbl <- within(trackz_tbl, cond <- factor(trackz_tbl$cond,levels=c(
-  'Herm 0 obst','Herm 15 obst','Herm 30 obst','Herm 45 obst','Herm 60 obst',
-  'Herm 150 obst','Herm 150 unobst')))
-```
-
 Make degree class circular
 
 ```{r}
@@ -547,6 +561,30 @@ trialz$degs <- as.circular(trialz$degs,type="angles",
     units="degrees",zero=pi/2,rotation="clock",template= 'none',modulo='asis')
 ```
 
+
+#### Identify tracks
+
+Bring over relevant information from df dataframe to other dataframes
+
+```{r}
+trackz_tbl     <- subset(trackz_tbl, arc %in% c(0,17,40))
+trialz <- subset(trialz, arc %in% c(0,17,40))
+```
+
+Drop trialz rows which have a type not derived from df
+
+```{r}
+# <- trialz[!trialz$type=="",]
+```
+
+Make the arc width a factor
+
+```{r}
+trialz$arc       <- as.factor(trialz$arc)
+trackz_tbl$arc   <- as.factor(trackz_tbl$arc)
+```
+
+Make the arc width a factor. This doesn't seem to influence the plotting order and may be redundant.
 
 #### Plotting
 
@@ -558,16 +596,16 @@ Later, use scale_colour_brewer(palette = "Paired")
 
 #### Absolute position of tracks with regard to the arena (not the stimulus)
 
-```{r abs headings fig, fig.height = 9.5, fig.width = 7}
+```{r abs headings fig, fig.height = 8, fig.width = 7}
 how_many <- 150
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-trackz_tbl %>% filter(obstacle=="obst") %>% 
-  ggplot() + coord_fixed() +
-  geom_path(aes(x=trans_x,y=trans_y,group=id,color=id),
-             alpha=.5, size=.75) + 
-  geom_point(aes(x=trans_x, y=trans_y,group=id,color=id),
-             alpha=.05, size=.5) + 
-  facet_wrap(vars(arc),ncol=2) + # obstacle
+trackz_tbl %>% #filter(obstacle=="obst") %>% 
+ ggplot() + coord_fixed() +
+ geom_path(aes(x=trans_x,y=trans_y,group=vid_ord,color=trial_set),
+             size=.5) + 
+ geom_point(aes(x=trans_x, y=trans_y,group=vid_ord,color=trial_set),
+             size=.5) + 
+  facet_wrap(vars(arc,type),ncol=2) + # obstacle
   annotate("path", color="orange",
   x=0+1*cos(seq(0,2*pi,length.out=100)),y=0+1*sin(seq(0,2*pi,length.out=100))) +
   annotate("path", color="blue",linetype="dashed",
@@ -576,21 +614,18 @@ trackz_tbl %>% filter(obstacle=="obst") %>%
   annotate("path", color="black",linetype="dashed",
   x=0+circ0*cos(seq(0,2*pi,length.out=100)),
   y=0+circ0*sin(seq(0,2*pi,length.out=100))) +
-  geom_point(data=trialz[
-    trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],   
-    aes(x=x_int,y=y_int,group=cond,color=id),
-             alpha=.1,size=6,shape=1) +
-  geom_text(data=trialz[
-    trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
-   aes(x=x_int,y=y_int,color=id,label=id),alpha=1,size=3) +
-  geom_segment(data=trialz[
-    trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
-   aes(x=x0,y=y0,xend=x_int,yend=y_int,alpha=0.5,colour=id)) +
+ geom_point(data=trialz,#[trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],   
+  aes(x=x_int,y=y_int,color=trial_set),size=6,shape=1) + #,color=id #,group=cond
+  #geom_text(data=trialz,#[trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
+  # aes(x=x_int,y=y_int,color=id,label=id),alpha=1,size=3) +
+ geom_segment(data=trialz,#[trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
+   aes(x=x0,y=y0,xend=x_int,yend=y_int,color=trial_set),linetype="dotted") + #,colour=id
   xlab('') + ylab('') + theme_classic() + 
-  ggtitle('Plot absolute tracks with obstacle(not normalized to stimulus)') +
+  ggtitle('Plot absolute tracks') +
   theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none") #+ 
-  #geom_segment(aes(x=0,y=0,xend=R*cos(circme),yend=R*sin(circme)),size=2) 
+        axis.text=element_blank()) + theme(legend.position = "none") + 
+   theme(plot.title=element_text(size=14,hjust=0.5), 
+        strip.background=element_blank(),strip.text=element_blank())
 ```
 
 #### Are animals attracted to the top-right (the opening)?
@@ -598,27 +633,17 @@ trackz_tbl %>% filter(obstacle=="obst") %>%
 From the plots, there may be attraction in some instances - check with null hypothesis tests.
 
 ```{r}
-#trialz$succ <- rep(0,dim(trialz)[1])
-trialz %>% group_by(type,arc,obstacle) %>%
+trialz %>% group_by(type,arc) %>%
   summarize( 
     n    = n(),
-    ids  = n_distinct(id),
-    mean = as.numeric(round(mean.circular(abs_rads))),
+    ids  = n_distinct(vid_ord),
+    mean = as.numeric(round(mean.circular(abs_rads),2)),
     R    = round(rho.circular(abs_rads),2),
     Ray.p= round(rayleigh.test(abs_rads)[[2]],2),
-    V.p  = round(rayleigh.test(abs_rads,mu=circular(pi/4))[[2]],2), # to top-right
-    #quart= round(sum(succ4)/length(succ4),2),
-    #Binp4= round(binom.test(sum(succ4),length(succ4),p=1/4)[[3]],2),
-    #quint= round(sum(succ5)/length(succ5),2),
-    #Binp5= round(binom.test(sum(succ5),length(succ5),p=1/5)[[3]],2),
-    #sext = round(sum(succ6)/length(succ6),2),
-    #Binp6= round(binom.test(sum(succ6),length(succ6),p=1/6)[[3]],2),
     sd   = round(sd.circular(abs_rads),2)
              ) -> abs_summary
 abs_summary
 ```
-
-Yes, according to the V test animals are likely attracted to the opening with the negative grey control, which is perhaps, unsurprising as there was no competing stimulus. They were also attracted to the 60d Hermitian stimulus. (Could something have differed in those trials - could the stimulus have had reduced contrast?)
 
 #### Relative position of tracks with regard to the stimulus
 
@@ -644,14 +669,13 @@ makerad <- function(x){x <- as.circular(x,type="angles",units="radians",
 Add variable for successfully falling into target sextant.
 
 ```{r Summarize relative headings}
-trialz %>% group_by(type,arc,obstacle) %>%
+trialz %>% group_by(type,arc) %>%
   summarize( 
     n    = n(),
-    ids  = n_distinct(id),
     mu_d = as.numeric(round(mean.circular(degs))),
     R    = round(rho.circular(degs),2),
-    Ray.p= round(rayleigh.test(degs)[[2]],2),
-    V.p  = round(rayleigh.test(degs,mu=circular(pi/2))[[2]],2),
+    Ray.p= round(rayleigh.test(radians)[[2]],3),
+    V.p  = round(rayleigh.test(radians,mu=circular(pi/2))[[2]],3),  #circular(pi/2)
     quart= round(sum(succ4)/length(succ4),2),
     Binp4= round(binom.test(sum(succ4),length(succ4),p=1/4)[[3]],2),
     quint= round(sum(succ5)/length(succ5),2),
@@ -666,99 +690,60 @@ headings_summ
 
 A4 size less margins is 9.54 (11.69-1.4-.75) x 7 (8.27-.75-.52) in.
 
-```{r rel headings fig, fig.height = 9.5, fig.width = 6}
+```{r rel headings fig, fig.height = 8, fig.width = 7}
 how_many <- 50
 linetypez <- c("FALSE"="dashed","TRUE"="solid")
 # geom_path is already facing up, without (pi/2)- , geom_point() is not
-trackz_tbl %>%  filter(obstacle=="obst") %>% 
-  filter(between(as.numeric(id),1,how_many)) %>% # view few
-  ggplot() + coord_fixed() + 
-  geom_path(aes(x=rel_x, y=rel_y, color=id))+#scale_linetype_manual(values=linetypez) +#,size=.5 
-  #geom_point(aes(x=rel_x,y=rel_y,group=id,color=id,size=succ5>0))+
- facet_wrap(vars(arc),ncol=2,strip.position="top") +
+trackz_tbl %>%  #filter(obstacle=="obst") %>% 
+  #filter(between(as.numeric(id),1,how_many)) %>% # view few
+ ggplot() + coord_fixed() + 
+ geom_path(aes(x=rel_x,y=rel_y,group=vid_ord,color=succ5))+
+ geom_point(aes(x=rel_x,y=rel_y,group=vid_ord,color=succ5),size=.3)+ #,size=succ5>0
+ facet_wrap(vars(arc,type),ncol=2,strip.position="top") +
  annotate("path", color="orange",
- x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
+   x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
  annotate("path", color="blue",linetype="dashed",
- x=circ1*cos(seq(0,2*pi,length.out=100)),
- y=circ1*sin(seq(0,2*pi,length.out=100))) +
+   x=circ1*cos(seq(0,2*pi,length.out=100)),
+   y=circ1*sin(seq(0,2*pi,length.out=100))) +
  annotate("path", color="black",linetype="dashed",
- x=circ0*cos(seq(0,2*pi,length.out=100)),
- y=circ0*sin(seq(0,2*pi,length.out=100))) +
- geom_point(data=trialz[ # Stick on final relative headings
-  trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
-  aes(x=cos(radians),y=sin(radians),shape=1,color=id),
-  size=2)+scale_shape_identity()+ #alpha=.5,
- geom_text(data=trialz[
-   trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
-   aes(x=.9*cos(radians),y=.9*sin(radians),color=id,label=id),
-   size=2.7,check_overlap=TRUE)+
- geom_segment(data=trialz[
-   trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
+   x=circ0*cos(seq(0,2*pi,length.out=100)),
+   y=circ0*sin(seq(0,2*pi,length.out=100))) +
+ geom_point(data=trialz,#[ # Stick on final relative headings
+ # trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
+   aes(x=cos(radians),y=sin(radians),color=succ5),size=5,shape=1)+ #alpha=.5,
+ geom_segment(data=trialz,#[
+   #trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
    aes(x=rel_x0,y=rel_y0,xend=cos(radians),yend=sin(radians),
-     colour=id),linetype="dotted") +
- geom_text(data=headings_summ[headings_summ$obstacle=="obst",], #panel labels
-  aes(x=-1,y=1,label=paste0(arc,"°")))+
-  geom_segment(data=headings_summ[headings_summ$obstacle=="obst",],aes(
-  x=0,y=0,xend=R*cos(mu_r),yend=R*sin(mu_r),group=arc),
-  size=1.3,colour="black",arrow=arrow(length=unit(.2,"cm")))+
-  xlab('') + ylab('') + theme_classic() + 
-  labs(title='Plot tracks with obstacle relative to stimulus') +
-  theme(axis.line=element_blank(),axis.ticks=element_blank(),
+     colour=succ5),linetype="dotted") +
+ geom_text(data=headings_summ, #panel labels
+   aes(x=-.9,y=1,label=paste0(type," ",arc,"°")),size=3.5)+
+ geom_segment(data=headings_summ,aes(
+   x=0,y=0,xend=R*cos(mu_r),yend=R*sin(mu_r),group=arc),
+   size=1.3,colour="black",arrow=arrow(length=unit(.2,"cm")))+
+   xlab('') + ylab('') + theme_classic() + 
+   labs(title='Plot tracks relative to stimulus') +
+   theme(axis.line=element_blank(),axis.ticks=element_blank(),
         axis.text=element_blank()) + theme(legend.position = "none") +
-  theme(plot.title=element_text(size=14,hjust=0.5), 
+   theme(plot.title=element_text(size=14,hjust=0.5), 
         strip.background=element_blank(),strip.text=element_blank())
 ```
+
+
 Uncalibrated tracks from the P. lividus adult trials. Each figure panel, represents the experiment arena looking downwards from above. The outer orange circle represents the wall of the arena, with is coloured grey, except for a visual stimulus, graded across the horizon according to a 1st Hermitian wavelet. The darkest part of the stimulus is located at the topmost point of the panel. Within the arena are marked tracks (297 in total), beginning near the centre, which delineate the paths taken by individual animals in trials. In these trials, animals must first negotiate an obstruction at the centre. Each colour corresponds to a given individual (of 50 in total). The points just after the track first crosses each of the two (dashed black and blue) concentric circles near the centre are used to mark a vector (shown with a straight line, dashed for headings directed to the target) to the arena wall. The intersection with the wall (the animal's heading) is shown by a hollow circle and the id of the animal. Animals are oriented in the 45d condition (and to a lesser extent the 60d and 150d condition) indicating that this species can see at a resolution better than 45d but worse than 30d.
 
-
-
-#### Compare relative tracks with and without the obstacle
-
-```{r fig.width=7,fig.height=4.5,}
-aw <- 150
-trackz_tbl %>% filter(arc==aw) %>% #150
-  ggplot() + coord_fixed() + 
-  #geom_path(aes(x=rel_x, y=rel_y,  group=vid_ord),alpha=.2,size=.05) + 
-  geom_point(aes(x=rel_x,y=rel_y,group=id,color=id),alpha=.5,size=.1) + 
-  facet_wrap(vars(obstacle)) +
-  annotate("path", color="orange",
-  x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
-  annotate("path", color="blue",linetype="dashed",
-  x=circ1*cos(seq(0,2*pi,length.out=100)),
-  y=circ1*sin(seq(0,2*pi,length.out=100))) +
-  annotate("path", color="black",linetype="dashed",
-  x=circ0*cos(seq(0,2*pi,length.out=100)),
-  y=circ0*sin(seq(0,2*pi,length.out=100))) +
-  # Stick on final relative headings 
-  geom_point(data=trialz[trialz$arc==aw,],
-   aes(x=cos(radians),y=sin(radians),shape=1,color=id),
-   alpha=.5,size=2)+scale_shape_identity()+
-  geom_text(data=trialz[trialz$arc==aw,], #150
-    aes(x=1.15*cos(radians),y=1.15*sin(radians),color=id,label=id),
-    alpha=.7,size=3)+
-  geom_segment(data=trialz[trialz$arc==aw,], #150
-    aes(x=rel_x0,y=rel_y0,xend=cos(radians),yend=sin(radians),
-        linetype="k",alpha=0.5,colour=id)) +
-  xlab('') + ylab('') + theme_classic() + 
-  ggtitle('Plot 150d tracks simultaneously') +
-  theme(axis.line=element_blank(),axis.ticks=element_blank(),
-        axis.text=element_blank()) + theme(legend.position = "none")
-```
 
 
 
 #### Effect of differing sector sizes
 
 ```{r Plot success with differing sectors}
-headings_summary %>% pivot_longer(c(quart,quint,sext)) %>%
-  filter(obstacle=="obst") %>%
-  ggplot(aes(x=arc,y=value,color=name)) + geom_point() + geom_line() +
+headings_summ %>% pivot_longer(c(quart,quint,sext)) %>% filter(type!="bar") %>%
+  ggplot(aes(x=arc,y=value,color=name,group=name)) +
   geom_segment(x=0,xend=150,y=.2,yend=.2,color="darkgreen",linetype=2)+
   geom_segment(x=0,xend=150,y=1/6,yend=1/6,color="blue",linetype=2)+
-  geom_segment(x=0,xend=150,y=1/4,yend=1/4,color="red",linetype=2)
+  geom_segment(x=0,xend=150,y=1/4,yend=1/4,color="red",linetype=2) + 
+  geom_point() + geom_line()
 ```
-
-
 
 Write the tracks to a file
 

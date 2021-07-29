@@ -461,9 +461,9 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 0	control	C1	3	22/01/2016	0	control	California	1.82	Sp	0	C3	NA
 0	control	C1	4	22/01/2016	0	control	California	3.27	Sp	0	C4	NA
 0	control	C2	1	22/01/2016	0	control	California	1.75	Sp	0	C5	NA
-0	control	C2	2	22/01/2016	0	control	California	0.30	Sp	0	C6	NA
+0	control	C2	2	22/01/2016	0	control	California	0.3	Sp	0	C6	NA
 0	control	C2	3	22/01/2016	0	control	California	1.88	Sp	0	C7	NA
-0	control	C2	4	22/01/2016	0	control	California	5.10	Sp	0	C8	NA
+0	control	C2	4	22/01/2016	0	control	California	5.1	Sp	0	C8	NA
 0	control	C3	1	25/01/2016	0	control	California	0.77	Sp	0	C9	NA
 0	control	C3	2	25/01/2016	0	control	California	0.92	Sp	0	C10	NA
 0	control	C3	3	25/01/2016	0	control	California	1.42	Sp	0	C11	NA
@@ -480,7 +480,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 0	control	C6	2	25/01/2016	0	control	California	6.02	Sp	0	C22	NA
 0	control	C6	3	25/01/2016	0	control	California	1.03	Sp	0	C23	NA
 0	control	C6	4	25/01/2016	0	control	California	0.21	Sp	0	C24	NA
-0	control	C7	1	25/01/2016	0	control	California	2.30	Sp	0	C25	NA
+0	control	C7	1	25/01/2016	0	control	California	2.3	Sp	0	C25	NA
 0	control	C7	2	25/01/2016	0	control	California	0.86	Sp	0	C26	NA
 0	control	C7	3	25/01/2016	0	control	California	5.88	Sp	0	C27	NA
 0	control	C7	4	25/01/2016	0	control	California	0.12	Sp	0	C28	NA
@@ -494,13 +494,13 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 0	control	C9	4	25/01/2016	0	control	California	2.59	Sp	0	C36	NA
 0	control	C10	1	26/01/2016	0	control	California	1.14	Sp	0	C37	NA
 0	control	C10	2	26/01/2016	0	control	California	4.17	Sp	0	C38	NA
-0	control	C10	3	26/01/2016	0	control	California	2.10	Sp	0	C39	NA
-0	control	C10	4	26/01/2016	0	control	California	1.30	Sp	0	C40	NA
+0	control	C10	3	26/01/2016	0	control	California	2.1	Sp	0	C39	NA
+0	control	C10	4	26/01/2016	0	control	California	1.3	Sp	0	C40	NA
 0	control	C11	1	26/01/2016	0	control	California	4.37	Sp	0	C41	NA
 0	control	C11	2	26/01/2016	0	control	California	1.35	Sp	0	C42	NA
 0	control	C11	3	26/01/2016	0	control	California	0.37	Sp	0	C43	NA
 0	control	C11	4	26/01/2016	0	control	California	0.11	Sp	0	C44	NA
-0	control	C12	1	26/01/2016	0	control	California	6.10	Sp	0	C45	NA
+0	control	C12	1	26/01/2016	0	control	California	6.1	Sp	0	C45	NA
 0	control	C12	2	26/01/2016	0	control	California	2.56	Sp	0	C46	NA
 0	control	C12	3	26/01/2016	0	control	California	6.21	Sp	0	C47	NA
 0	control	C12	4	26/01/2016	0	control	California	4.71	Sp	0	C48	NA
@@ -510,11 +510,11 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 0	control	C13	3	09/02/2016	0	control	California	1.45	Sp	0	C52	NA
 0	control	C14	1	26/01/2016	0	control	California	6.05	Sp	0	C53	NA
 0	control	C14	2	26/01/2016	0	control	California	1.79	Sp	0	C54	NA
-0	control	C14	3	26/01/2016	0	control	California	2.10	Sp	0	C55	NA
+0	control	C14	3	26/01/2016	0	control	California	2.1	Sp	0	C55	NA
 0	control	C14	4	26/01/2016	0	control	California	1.45	Sp	0	C56	NA
 40	DoG	C15	4	26/01/2016	0	dog 40	California	5.81	Sp	0	C57	NA
 40	DoG	C15	1	26/01/2016	0	dog 40	California	1.93	Sp	0	C58	NA
-40	DoG	C15	2	26/01/2016	0	dog 40	California	4.10	Sp	0	C59	NA
+40	DoG	C15	2	26/01/2016	0	dog 40	California	4.1	Sp	0	C59	NA
 40	DoG	C15	3	26/01/2016	0	dog 40	California	2.78	Sp	0	C60	NA
 40	DoG	C16	4	26/01/2016	0	dog 40	California	4.66	Sp	0	C61	NA
 40	DoG	C16	2	27/01/2016	0	dog 40	California	0.18	Sp	0	C62	NA
@@ -531,12 +531,12 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 40	DoG	C19	1	27/01/2016	0	dog 40	California	2.15	Sp	0	C73	NA
 40	DoG	C19	2	27/01/2016	0	dog 40	California	0.86	Sp	0	C74	NA
 40	DoG	C19	3	27/01/2016	0	dog 40	California	2.39	Sp	0	C75	NA
-40	DoG	C19	4	27/01/2016	0	dog 40	California	0.30	Sp	0	C76	NA
+40	DoG	C19	4	27/01/2016	0	dog 40	California	0.3	Sp	0	C76	NA
 40	DoG	C20	1	27/01/2016	0	dog 40	California	2.03	Sp	0	C77	NA
 40	DoG	C20	2	27/01/2016	0	dog 40	California	0.84	Sp	0	C78	NA
 40	DoG	C20	3	27/01/2016	0	dog 40	California	0.78	Sp	0	C79	NA
 40	DoG	C20	4	27/01/2016	0	dog 40	California	5.23	Sp	0	C80	NA
-40	DoG	C21	1	27/01/2016	0	dog 40	California	1.80	Sp	0	C81	NA
+40	DoG	C21	1	27/01/2016	0	dog 40	California	1.8	Sp	0	C81	NA
 40	DoG	C21	2	27/01/2016	0	dog 40	California	4.83	Sp	0	C82	NA
 40	DoG	C21	3	27/01/2016	0	dog 40	California	4.99	Sp	0	C83	NA
 40	DoG	C21	4	27/01/2016	0	dog 40	California	5.97	Sp	0	C84	NA
@@ -557,13 +557,13 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 40	DoG	C25	3	27/01/2016	0	dog 40	California	3.21	Sp	0	C99	NA
 40	DoG	C25	4	27/01/2016	0	dog 40	California	5.89	Sp	0	C100	NA
 40	DoG	C26	1	28/01/2016	0	dog 40	California	3.36	Sp	0	C101	NA
-40	DoG	C26	2	28/01/2016	0	dog 40	California	3.80	Sp	0	C102	NA
+40	DoG	C26	2	28/01/2016	0	dog 40	California	3.8	Sp	0	C102	NA
 40	DoG	C26	3	28/01/2016	0	dog 40	California	5.76	Sp	0	C103	NA
 40	DoG	C26	4	28/01/2016	0	dog 40	California	4.94	Sp	0	C104	NA
 40	DoG	C27	1	28/01/2016	0	dog 40	California	4.22	Sp	0	C105	NA
 40	DoG	C27	2	28/01/2016	0	dog 40	California	4.62	Sp	0	C106	NA
 40	DoG	C27	3	28/01/2016	0	dog 40	California	1.98	Sp	0	C107	NA
-40	DoG	C27	4	28/01/2016	0	dog 40	California	4.40	Sp	0	C108	NA
+40	DoG	C27	4	28/01/2016	0	dog 40	California	4.4	Sp	0	C108	NA
 40	DoG	C28	1	28/01/2016	0	dog 40	California	2.39	Sp	0	C109	NA
 40	DoG	C28	2	28/01/2016	0	dog 40	California	5.16	Sp	0	C110	NA
 40	DoG	C28	3	28/01/2016	0	dog 40	California	0.83	Sp	0	C111	NA
@@ -571,34 +571,34 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 17	DoG	C29	1	29/01/2016	0	dog 17	California	2.89	Sp	0	C113	NA
 17	DoG	C29	2	29/01/2016	0	dog 17	California	5.68	Sp	0	C114	NA
 17	DoG	C29	3	29/01/2016	0	dog 17	California	0.88	Sp	0	C115	NA
-17	DoG	C29	4	29/01/2016	0	dog 17	California	2.80	Sp	0	C116	NA
+17	DoG	C29	4	29/01/2016	0	dog 17	California	2.8	Sp	0	C116	NA
 17	DoG	C30	1	29/01/2016	0	dog 17	California	2.55	Sp	0	C117	NA
-17	DoG	C30	2	29/01/2016	0	dog 17	California	0.50	Sp	0	C118	NA
+17	DoG	C30	2	29/01/2016	0	dog 17	California	0.5	Sp	0	C118	NA
 17	DoG	C30	3	29/01/2016	0	dog 17	California	6.03	Sp	0	C119	NA
 17	DoG	C30	4	29/01/2016	0	dog 17	California	0.32	Sp	0	C120	NA
 17	DoG	C31	1	29/01/2016	0	dog 17	California	0.82	Sp	0	C121	NA
 17	DoG	C31	2	29/01/2016	0	dog 17	California	6.11	Sp	0	C122	NA
 17	DoG	C31	3	29/01/2016	0	dog 17	California	4.37	Sp	0	C123	NA
 17	DoG	C31	4	29/01/2016	0	dog 17	California	0.58	Sp	0	C124	NA
-17	DoG	C32	1	29/01/2016	0	dog 17	California	1.80	Sp	0	C125	NA
+17	DoG	C32	1	29/01/2016	0	dog 17	California	1.8	Sp	0	C125	NA
 17	DoG	C32	2	29/01/2016	0	dog 17	California	0.16	Sp	0	C126	NA
 17	DoG	C32	3	29/01/2016	0	dog 17	California	0.79	Sp	0	C127	NA
 17	DoG	C32	4	29/01/2016	0	dog 17	California	5.79	Sp	0	C128	NA
 17	DoG	C33	1	29/01/2016	0	dog 17	California	5.54	Sp	0	C129	NA
 17	DoG	C33	2	29/01/2016	0	dog 17	California	3.48	Sp	0	C130	NA
 17	DoG	C33	3	29/01/2016	0	dog 17	California	1.12	Sp	0	C131	NA
-17	DoG	C33	4	29/01/2016	0	dog 17	California	4.70	Sp	0	C132	NA
+17	DoG	C33	4	29/01/2016	0	dog 17	California	4.7	Sp	0	C132	NA
 17	DoG	C34	1	29/01/2016	0	dog 17	California	2.36	Sp	0	C133	NA
 17	DoG	C34	2	29/01/2016	0	dog 17	California	2.87	Sp	0	C134	NA
 17	DoG	C34	3	29/01/2016	0	dog 17	California	5.66	Sp	0	C135	NA
 17	DoG	C34	4	29/01/2016	0	dog 17	California	2.36	Sp	0	C136	NA
 17	DoG	C35	1	29/01/2016	0	dog 17	California	4.11	Sp	0	C137	NA
-17	DoG	C35	2	29/01/2016	0	dog 17	California	1.50	Sp	0	C138	NA
+17	DoG	C35	2	29/01/2016	0	dog 17	California	1.5	Sp	0	C138	NA
 17	DoG	C35	3	29/01/2016	0	dog 17	California	0.59	Sp	0	C139	NA
 17	DoG	C35	4	29/01/2016	0	dog 17	California	3.98	Sp	0	C140	NA
 17	DoG	C36	4	29/01/2016	0	dog 17	California	1.85	Sp	0	C141	NA
 17	DoG	C36	2	29/01/2016	0	dog 17	California	0.08	Sp	0	C142	NA
-17	DoG	C36	3	29/01/2016	0	dog 17	California	2.90	Sp	0	C143	NA
+17	DoG	C36	3	29/01/2016	0	dog 17	California	2.9	Sp	0	C143	NA
 17	DoG	C36	1	29/01/2016	0	dog 17	California	5.45	Sp	0	C144	NA
 17	DoG	C37	1	30/01/2016	0	dog 17	California	3.66	Sp	0	C145	NA
 17	DoG	C37	2	30/01/2016	0	dog 17	California	1.45	Sp	0	C146	NA
@@ -631,7 +631,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 10	bar	C44	4	03/02/2016	0	bar 10	California	5.42	Sp	0	C173	NA
 10	bar	C44	1	03/02/2016	0	bar 10	California	1.76	Sp	0	C174	NA
 10	bar	C44	2	03/02/2016	0	bar 10	California	5.07	Sp	0	C175	NA
-10	bar	C44	3	03/02/2016	0	bar 10	California	2.30	Sp	0	C176	NA
+10	bar	C44	3	03/02/2016	0	bar 10	California	2.3	Sp	0	C176	NA
 10	bar	C45	1	03/02/2016	0	bar 10	California	5.97	Sp	0	C177	NA
 10	bar	C45	2	03/02/2016	0	bar 10	California	2.13	Sp	0	C178	NA
 10	bar	C45	3	03/02/2016	0	bar 10	California	1.81	Sp	0	C179	NA
@@ -640,10 +640,10 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 10	bar	C46	2	03/02/2016	0	bar 10	California	5.83	Sp	0	C182	NA
 10	bar	C46	3	03/02/2016	0	bar 10	California	5.47	Sp	0	C183	NA
 10	bar	C46	4	03/02/2016	0	bar 10	California	0.13	Sp	0	C184	NA
-10	bar	C47	1	04/02/2016	0	bar 10	California	0.10	Sp	0	C185	NA
+10	bar	C47	1	04/02/2016	0	bar 10	California	0.1	Sp	0	C185	NA
 10	bar	C47	2	04/02/2016	0	bar 10	California	2.81	Sp	0	C186	NA
-10	bar	C47	3	04/02/2016	0	bar 10	California	2.80	Sp	0	C187	NA
-10	bar	C47	4	04/02/2016	0	bar 10	California	2.90	Sp	0	C188	NA
+10	bar	C47	3	04/02/2016	0	bar 10	California	2.8	Sp	0	C187	NA
+10	bar	C47	4	04/02/2016	0	bar 10	California	2.9	Sp	0	C188	NA
 10	bar	C48	1	04/02/2016	0	bar 10	California	5.57	Sp	0	C189	NA
 10	bar	C48	2	04/02/2016	0	bar 10	California	6.16	Sp	0	C190	NA
 10	bar	C48	3	04/02/2016	0	bar 10	California	3.32	Sp	0	C191	NA
@@ -654,7 +654,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 9	DoG	C49	4	04/02/2016	0	dog 9	California	5.57	Sp	0	C196	NA
 9	DoG	C50	1	04/02/2016	0	dog 9	California	3.45	Sp	0	C197	NA
 9	DoG	C50	2	04/02/2016	0	dog 9	California	3.51	Sp	0	C198	NA
-9	DoG	C50	3	04/02/2016	0	dog 9	California	5.40	Sp	0	C199	NA
+9	DoG	C50	3	04/02/2016	0	dog 9	California	5.4	Sp	0	C199	NA
 9	DoG	C50	4	04/02/2016	0	dog 9	California	4.62	Sp	0	C200	NA
 9	DoG	C51	1	04/02/2016	0	dog 9	California	6.17	Sp	0	C201	NA
 9	DoG	C51	2	04/02/2016	0	dog 9	California	3.06	Sp	0	C202	NA
@@ -687,7 +687,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 9	DoG	C58	1	06/02/2016	0	dog 9	California	6.23	Sp	0	C229	NA
 9	DoG	C58	2	06/02/2016	0	dog 9	California	5.16	Sp	0	C230	NA
 9	DoG	C58	3	06/02/2016	0	dog 9	California	4.83	Sp	0	C231	NA
-9	DoG	C58	4	06/02/2016	0	dog 9	California	3.50	Sp	0	C232	NA
+9	DoG	C58	4	06/02/2016	0	dog 9	California	3.5	Sp	0	C232	NA
 6.5	bar	C59	1	06/02/2016	0	bar 6.5	California	2.45	Sp	0	C233	NA
 6.5	bar	C59	2	06/02/2016	0	bar 6.5	California	1.91	Sp	0	C234	NA
 6.5	bar	C59	3	06/02/2016	0	bar 6.5	California	4.92	Sp	0	C235	NA
@@ -708,12 +708,12 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 6.5	bar	C63	2	06/02/2016	0	bar 6.5	California	0.84	Sp	0	C250	NA
 6.5	bar	C63	3	06/02/2016	0	bar 6.5	California	4.68	Sp	0	C251	NA
 6.5	bar	C63	4	06/02/2016	0	bar 6.5	California	0.18	Sp	0	C252	NA
-6.5	bar	C64	1	07/02/2016	0	bar 6.5	California	4.60	Sp	0	C253	NA
+6.5	bar	C64	1	07/02/2016	0	bar 6.5	California	4.6	Sp	0	C253	NA
 6.5	bar	C64	2	07/02/2016	0	bar 6.5	California	0.12	Sp	0	C254	NA
 6.5	bar	C64	3	07/02/2016	0	bar 6.5	California	0.34	Sp	0	C255	NA
 6.5	bar	C64	4	07/02/2016	0	bar 6.5	California	5.77	Sp	0	C256	NA
 6.5	bar	C65	1	07/02/2016	0	bar 6.5	California	2.34	Sp	0	C257	NA
-6.5	bar	C65	2	07/02/2016	0	bar 6.5	California	0.20	Sp	0	C258	NA
+6.5	bar	C65	2	07/02/2016	0	bar 6.5	California	0.2	Sp	0	C258	NA
 6.5	bar	C65	3	07/02/2016	0	bar 6.5	California	0.45	Sp	0	C259	NA
 6.5	bar	C65	4	07/02/2016	0	bar 6.5	California	3.54	Sp	0	C260	NA
 6.5	bar	C66	1	07/02/2016	0	bar 6.5	California	2.38	Sp	0	C261	NA
@@ -721,27 +721,27 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 6.5	bar	C66	3	07/02/2016	0	bar 6.5	California	3.81	Sp	0	C263	NA
 6.5	bar	C66	4	07/02/2016	0	bar 6.5	California	3.48	Sp	0	C264	NA
 0	control	C67	2	09/02/2016	0	control	California	3.62	Sp	0	C265	NA
-0	control	C67	3	09/02/2016	0	control	California	5.30	Sp	0	C266	NA
+0	control	C67	3	09/02/2016	0	control	California	5.3	Sp	0	C266	NA
 0	control	C67	4	09/02/2016	0	control	California	2.29	Sp	0	C267	NA
 0	control	C67	1	09/02/2016	0	control	California	0.93	Sp	0	C268	NA
 0	control	C68	1	09/02/2016	0	control	California	4.17	Sp	0	C269	NA
 0	control	C68	2	09/02/2016	0	control	California	2.75	Sp	0	C270	NA
-0	control	C68	3	09/02/2016	0	control	California	3.60	Sp	0	C271	NA
+0	control	C68	3	09/02/2016	0	control	California	3.6	Sp	0	C271	NA
 0	control	C68	4	09/02/2016	0	control	California	5.34	Sp	0	C272	NA
-0	control	C69	1	09/02/2016	0	control	California	4.10	Sp	0	C273	NA
+0	control	C69	1	09/02/2016	0	control	California	4.1	Sp	0	C273	NA
 0	control	C69	2	09/02/2016	0	control	California	2.81	Sp	0	C274	NA
-0	control	C69	3	09/02/2016	0	control	California	0.70	Sp	0	C275	NA
+0	control	C69	3	09/02/2016	0	control	California	0.7	Sp	0	C275	NA
 0	control	C69	4	09/02/2016	0	control	California	3.71	Sp	0	C276	NA
 0	control	C70	1	09/02/2016	0	control	California	4.72	Sp	0	C277	NA
 0	control	C70	2	09/02/2016	0	control	California	2.69	Sp	0	C278	NA
-0	control	C70	3	09/02/2016	0	control	California	2.10	Sp	0	C279	NA
+0	control	C70	3	09/02/2016	0	control	California	2.1	Sp	0	C279	NA
 0	control	C70	4	09/02/2016	0	control	California	4.76	Sp	0	C280	NA
 17	DoG	C71	1	09/02/2016	0	dog 17	California	3.47	Sp	0	C281	NA
 17	DoG	C71	2	09/02/2016	0	dog 17	California	1.26	Sp	0	C282	NA
 17	DoG	C71	3	09/02/2016	0	dog 17	California	1.94	Sp	0	C283	NA
 17	DoG	C71	4	09/02/2016	0	dog 17	California	4.21	Sp	0	C284	NA
 17	DoG	C72	1	09/02/2016	0	dog 17	California	3.82	Sp	0	C285	NA
-17	DoG	C72	2	10/02/2016	0	dog 17	California	4.70	Sp	0	C286	NA
+17	DoG	C72	2	10/02/2016	0	dog 17	California	4.7	Sp	0	C286	NA
 17	DoG	C72	3	10/02/2016	0	dog 17	California	0.23	Sp	0	C287	NA
 17	DoG	C72	4	09/02/2016	0	dog 17	California	3.26	Sp	0	C288	NA
 17	DoG	C73	1	09/02/2016	0	dog 17	California	2.51	Sp	0	C289	NA
@@ -756,20 +756,20 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 17	DoG	C75	2	09/02/2016	0	dog 17	California	2.57	Sp	0	C298	NA
 17	DoG	C75	3	09/02/2016	0	dog 17	California	1.59	Sp	0	C299	NA
 17	DoG	C75	4	09/02/2016	0	dog 17	California	1.04	Sp	0	C300	NA
-6.5	bar	C76	1	09/02/2016	0	bar 6.5	California	3.30	Sp	0	C301	NA
+6.5	bar	C76	1	09/02/2016	0	bar 6.5	California	3.3	Sp	0	C301	NA
 6.5	bar	C76	2	09/02/2016	0	bar 6.5	California	4.05	Sp	0	C302	NA
 6.5	bar	C76	3	09/02/2016	0	bar 6.5	California	2.26	Sp	0	C303	NA
 6.5	bar	C76	4	09/02/2016	0	bar 6.5	California	3.47	Sp	0	C304	NA
 6.5	bar	C77	1	10/02/2016	0	bar 6.5	California	4.67	Sp	0	C305	NA
 6.5	bar	C77	2	10/02/2016	0	bar 6.5	California	3.64	Sp	0	C306	NA
 6.5	bar	C77	3	10/02/2016	0	bar 6.5	California	3.66	Sp	0	C307	NA
-6.5	bar	C77	4	10/02/2016	0	bar 6.5	California	4.80	Sp	0	C308	NA
+6.5	bar	C77	4	10/02/2016	0	bar 6.5	California	4.8	Sp	0	C308	NA
 6.5	bar	C78	1	10/02/2016	0	bar 6.5	California	1.52	Sp	0	C309	NA
 6.5	bar	C78	2	10/02/2016	0	bar 6.5	California	5.24	Sp	0	C310	NA
 6.5	bar	C78	3	10/02/2016	0	bar 6.5	California	0.91	Sp	0	C311	NA
 6.5	bar	C78	4	10/02/2016	0	bar 6.5	California	1.35	Sp	0	C312	NA
 6.5	bar	C79	1	10/02/2016	0	bar 6.5	California	3.81	Sp	0	C313	NA
-6.5	bar	C79	2	10/02/2016	0	bar 6.5	California	5.50	Sp	0	C314	NA
+6.5	bar	C79	2	10/02/2016	0	bar 6.5	California	5.5	Sp	0	C314	NA
 6.5	bar	C79	3	10/02/2016	0	bar 6.5	California	0.96	Sp	0	C315	NA
 6.5	bar	C79	4	10/02/2016	0	bar 6.5	California	4.98	Sp	0	C316	NA
 6.5	bar	C80	1	10/02/2016	0	bar 6.5	California	5.88	Sp	0	C317	NA
@@ -777,16 +777,16 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 6.5	bar	C80	3	10/02/2016	0	bar 6.5	California	0.66	Sp	0	C319	NA
 6.5	bar	C80	4	10/02/2016	0	bar 6.5	California	5.61	Sp	0	C320	NA
 6.5	bar	C81	1	10/02/2016	0	bar 6.5	California	2.48	Sp	0	C321	NA
-6.5	bar	C81	2	10/02/2016	0	bar 6.5	California	4.80	Sp	0	C322	NA
+6.5	bar	C81	2	10/02/2016	0	bar 6.5	California	4.8	Sp	0	C322	NA
 6.5	bar	C81	3	10/02/2016	0	bar 6.5	California	0.39	Sp	0	C323	NA
 6.5	bar	C81	4	10/02/2016	0	bar 6.5	California	6.04	Sp	0	C324	NA
-40	bar	C82	1	10/02/2016	0	bar 40	California	4.10	Sp	0	C325	NA
+40	bar	C82	1	10/02/2016	0	bar 40	California	4.1	Sp	0	C325	NA
 40	bar	C82	2	10/02/2016	0	bar 40	California	0.37	Sp	0	C326	NA
 40	bar	C82	3	10/02/2016	0	bar 40	California	5.39	Sp	0	C327	NA
 40	bar	C82	4	10/02/2016	0	bar 40	California	4.49	Sp	0	C328	NA
 9	DoG	C83	1	10/02/2016	0	dog 9	California	4.81	Sp	0	C329	NA
 9	DoG	C83	2	10/02/2016	0	dog 9	California	1.44	Sp	0	C330	NA
-9	DoG	C83	3	10/02/2016	0	dog 9	California	4.50	Sp	0	C331	NA
+9	DoG	C83	3	10/02/2016	0	dog 9	California	4.5	Sp	0	C331	NA
 9	DoG	C83	4	10/02/2016	0	dog 9	California	4.21	Sp	0	C332	NA
 9	DoG	C84	1	10/02/2016	0	dog 9	California	2.15	Sp	0	C333	NA
 9	DoG	C84	2	10/02/2016	0	dog 9	California	2.95	Sp	0	C334	NA
@@ -795,7 +795,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 9	DoG	C85	1	10/02/2016	0	dog 9	California	5.62	Sp	0	C337	NA
 9	DoG	C85	2	10/02/2016	0	dog 9	California	3.41	Sp	0	C338	NA
 9	DoG	C85	3	10/02/2016	0	dog 9	California	1.74	Sp	0	C339	NA
-9	DoG	C85	4	10/02/2016	0	dog 9	California	3.80	Sp	0	C340	NA
+9	DoG	C85	4	10/02/2016	0	dog 9	California	3.8	Sp	0	C340	NA
 9	DoG	C86	1	10/02/2016	0	dog 9	California	2.79	Sp	0	C341	NA
 9	DoG	C86	2	10/02/2016	0	dog 9	California	4.35	Sp	0	C342	NA
 9	DoG	C86	3	10/02/2016	0	dog 9	California	5.18	Sp	0	C343	NA
@@ -808,10 +808,10 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 10	bar	C88	2	11/02/2016	0	bar 10	California	3.44	Sp	0	C350	NA
 10	bar	C88	3	11/02/2016	0	bar 10	California	4.95	Sp	0	C351	NA
 10	bar	C88	4	11/02/2016	0	bar 10	California	5.03	Sp	0	C352	NA
-10	bar	C89	1	11/02/2016	0	bar 10	California	5.90	Sp	0	C353	NA
+10	bar	C89	1	11/02/2016	0	bar 10	California	5.9	Sp	0	C353	NA
 10	bar	C89	2	11/02/2016	0	bar 10	California	2.45	Sp	0	C354	NA
 10	bar	C89	3	11/02/2016	0	bar 10	California	5.36	Sp	0	C355	NA
-10	bar	C89	4	11/02/2016	0	bar 10	California	0.20	Sp	0	C356	NA
+10	bar	C89	4	11/02/2016	0	bar 10	California	0.2	Sp	0	C356	NA
 10	bar	C90	1	11/02/2016	0	bar 10	California	2.11	Sp	0	C357	NA
 10	bar	C90	2	11/02/2016	0	bar 10	California	2.56	Sp	0	C358	NA
 10	bar	C90	3	11/02/2016	0	bar 10	California	1.42	Sp	0	C359	NA
@@ -825,7 +825,7 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 17	DoG	C92	3	11/02/2016	0	dog 17	California	5.28	Sp	0	C367	NA
 17	DoG	C92	4	11/02/2016	0	dog 17	California	0.69	Sp	0	C368	NA
 17	DoG	C93	1	11/02/2016	0	dog 17	California	1.42	Sp	1	C369	NA
-17	DoG	C93	2	11/02/2016	0	dog 17	California	5.10	Sp	1	C370	NA
+17	DoG	C93	2	11/02/2016	0	dog 17	California	5.1	Sp	1	C370	NA
 17	DoG	C93	3	11/02/2016	0	dog 17	California	5.39	Sp	1	C371	NA
 17	DoG	C93	4	11/02/2016	0	dog 17	California	5.95	Sp	1	C372	NA
 17	DoG	C94	1	11/02/2016	0	dog 17	California	5.98	Sp	1	C373	NA
@@ -848,19 +848,19 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 17	DoG	C98	2	12/02/2016	0	dog 17	California	1.15	Sp	1	C390	NA
 17	DoG	C98	3	12/02/2016	0	dog 17	California	1.96	Sp	1	C391	NA
 17	DoG	C98	4	12/02/2016	0	dog 17	California	6.24	Sp	1	C392	NA
-17	DoG	C99	1	12/02/2016	0	dog 17	California	2.70	Sp	1	C393	NA
+17	DoG	C99	1	12/02/2016	0	dog 17	California	2.7	Sp	1	C393	NA
 17	DoG	C99	2	12/02/2016	0	dog 17	California	0.04	Sp	1	C394	NA
 17	DoG	C99	3	12/02/2016	0	dog 17	California	0.41	Sp	1	C395	NA
 17	DoG	C99	4	12/02/2016	0	dog 17	California	0.53	Sp	1	C396	NA
 17	DoG	C100	1	12/02/2016	0	dog 17	California	4.25	Sp	1	C397	NA
-17	DoG	C100	2	12/02/2016	0	dog 17	California	2.20	Sp	1	C398	NA
+17	DoG	C100	2	12/02/2016	0	dog 17	California	2.2	Sp	1	C398	NA
 17	DoG	C100	3	12/02/2016	0	dog 17	California	4.04	Sp	1	C399	NA
 17	DoG	C100	4	12/02/2016	0	dog 17	California	4.86	Sp	1	C400	NA
 17	DoG	C101	1	12/02/2016	0	dog 17	California	4.88	Sp	1	C401	NA
 17	DoG	C101	2	12/02/2016	0	dog 17	California	3.83	Sp	1	C402	NA
 17	DoG	C101	3	12/02/2016	0	dog 17	California	1.21	Sp	1	C403	NA
 17	DoG	C101	4	12/02/2016	0	dog 17	California	5.27	Sp	1	C404	NA
-17	DoG	C102	1	12/02/2016	0	dog 17	California	3.60	Sp	1	C405	NA
+17	DoG	C102	1	12/02/2016	0	dog 17	California	3.6	Sp	1	C405	NA
 17	DoG	C102	2	12/02/2016	0	dog 17	California	3.93	Sp	1	C406	NA
 17	DoG	C102	3	12/02/2016	0	dog 17	California	0.98	Sp	1	C407	NA
 17	DoG	C102	4	12/02/2016	0	dog 17	California	1.99	Sp	1	C408	NA
@@ -877,18 +877,18 @@ arc	type	trial_set	pos	date	huge	pattern	locale	heading_rad	species	predator	id	
 17	DoG	C105	3	12/02/2016	0	dog 17	California	3.79	Sp	1	C419	NA
 17	DoG	C105	4	12/02/2016	0	dog 17	California	5.99	Sp	1	C420	NA
 17	DoG	C106	1	12/02/2016	0	dog 17	California	0.31	Sp	1	C421	NA
-17	DoG	C106	2	12/02/2016	0	dog 17	California	5.50	Sp	1	C422	NA
+17	DoG	C106	2	12/02/2016	0	dog 17	California	5.5	Sp	1	C422	NA
 17	DoG	C106	3	12/02/2016	0	dog 17	California	5.48	Sp	1	C423	NA
 17	DoG	C106	4	12/02/2016	0	dog 17	California	3.56	Sp	1	C424	NA
 10	bar	C107	1	11/02/2016	0	bar 10	California	0.17	Sp	0	C425	NA
-10	bar	C107	2	11/02/2016	0	bar 10	California	4.80	Sp	0	C426	NA
+10	bar	C107	2	11/02/2016	0	bar 10	California	4.8	Sp	0	C426	NA
 10	bar	C107	3	11/02/2016	0	bar 10	California	5.74	Sp	0	C427	NA
 10	bar	C107	4	11/02/2016	0	bar 10	California	5.83	Sp	0	C428	NA
 0	control	C108	1	09/02/2016	0	control	California	4.65	Sp	0	C429	NA
 0	control	C108	2	09/02/2016	0	control	California	5.25	Sp	0	C430	NA
 0	control	C108	3	09/02/2016	0	control	California	0.71	Sp	0	C431	NA
 0	control	C108	4	26/01/2016	0	control	California	0.52	Sp	0	C432	NA
-0	control	C109	1	26/01/2016	0	control	California	5.60	Sp	0	C433	NA
+0	control	C109	1	26/01/2016	0	control	California	5.6	Sp	0	C433	NA
 0	control	C109	2	26/01/2016	0	control	California	0.63	Sp	0	C434	NA
 0	control	C109	3	25/01/2016	0	control	California	1.32	Sp	0	C435	NA
 0	control	C109	4	25/01/2016	0	control	California	1.95	Sp	0	C436	NA

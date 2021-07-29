@@ -61,7 +61,7 @@ end
 i = 1;
 while i <= size(trial_limits, 1)       % for each track
     
-        if max(tranz_trackz{i}(:,2)) <= 0.5                    % if the lowest rho value for the tracks is above 0.25 
+        if max(tranz_trackz{i}(:,2)) <= 0.5                    % if the lowest rho value for the tracks is above 0.5 
         [~, index] = max(tranz_trackz{i}(:,2))            ; 
         circleValues(i,3:4) = tranz_trackz{i}(index, 1:2) ;% make this the second heading value
         warntext = ['For ',num2str(video_name),' track ',num2str(i),', no track further than 0.5; last point with rho of ',...
@@ -123,8 +123,8 @@ for i = 1:num_trials
     %get polar coordinates of intersects
     [theta_target1, ~] = cart2pol(circle_intersect(i,1),circle_intersect(i,3))   ;
     [theta_target2, ~] = cart2pol(circle_intersect(i,2),circle_intersect(i,4))   ;
-    intersect_angle1(i) = radtodeg(theta_target1) ; 
-    intersect_angle2(i) = radtodeg(theta_target2) ;
+    intersect_angle1(i) = rad2deg(theta_target1) ; 
+    intersect_angle2(i) = rad2deg(theta_target2) ;
     
     %%% JS: Instead of the next section being a manual selection, you could
     %%% automatically select the intersect that is closest to the outer circle
@@ -173,7 +173,6 @@ results_matrix(:,5) = circleValues(:,4);                 % rho of second vector 
 results_matrix(:,6) = trial_limits(:,9);                 % original heading of stimulus in relation to the camera
 results_matrix(:,7) = trial_limits(:,11);                % position of stimulus from 1 to 4
 
-
 %% create single plot with many trials and points marked
 trails_plot = figure();   set(trails_plot, 'Visible', 'off');
 counter = 1 ; %
@@ -198,7 +197,7 @@ title(video_name) ;
 
 calc_points = zeros([num_trials 2]);    k = 1;
 
-while k <= num_trials ;
+while k <= num_trials 
     calc_points(k) = -(results_matrix(k,1)) + (pi/2) ;  % set to radian convention to be clockwise and zero at 0
     [x, y] = pol2cart(calc_points(k),1) ;    %  back to cartesian
     calc_points(k, 1) = x         ;
@@ -231,7 +230,6 @@ cart_stim_mids = zeros([length(trial_limits(:,9)) 2]);
 pol_stim_mids = zeros([length(trial_limits(:,9)) 1]);           k = 1;
 
 while k <= num_trials
-
     pol_stim_mids(k) = -(trial_limits(k,9)) + pi/2 ;  % set to radian convention to be clockwise and zero at 0
     [x, y] = pol2cart(pol_stim_mids(k),1) ;    %  back to cartesian
     cart_stim_mids(k, 1) = x         ;
