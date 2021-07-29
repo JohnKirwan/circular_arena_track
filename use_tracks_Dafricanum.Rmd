@@ -547,7 +547,10 @@ Are the tracking files all represented in the data spreadsheet?
 
 
 dim(trialz)[1]==dim(df)[1]
+unique(trackz_tbl$trial_set)==unique(trialz$trial_set)
 unique(df$trial_set)==unique(trialz$trial_set)
+unique(trackz_tbl$trial_set)==unique(trialz$trial_set)
+
 ```
 
 
