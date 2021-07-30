@@ -80,14 +80,14 @@ df$predator <- NULL
 
 df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
 
-df$type[df$type=="grey control"] <- "control"
+df$type[df$type=="grey control"]       <- "control"
 df$pattern[df$pattern=="grey control"] <- "control"
-df$heading_rad <- (pi/2) - df$heading_rad # unit circle rotation and zero
-df$radians[df$radians < 0] <- df$radians[ df$radians < 0] + 2*pi
+df$heading_rad <- mapply(rad_unclock, df$heading_rad)
+#df$heading_rad <- (pi/2) - df$heading_rad # unit circle rotation and zero
+#df$radians[df$radians < 0] <- df$radians[ df$radians < 0] + 2*pi
 df %<>% unite("cond", type:arc, remove = FALSE, sep=" ")
 head(df)
 ```
-
 Are there any (predicted) track names not represented in the file list? i.e. landmark files without a matching track file?
 
 ```{r}
@@ -186,10 +186,11 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
         tl$last_f[i] <- as.numeric(landmarks[((i+1)*2)-1,1]-1)# trial i last frame
      } else { tl$last_f[i]  <- max(animal_track[,1]) } # max along dimension 1 
 
- ### ATTEMPTING TO MOVE THIS BACK INTO LOOP  
  tl$video[i]     <- file_tbl[[vid_num,1]]
  tl$arc[i]       <- file_tbl$arc[file_tbl$basename==tl$video[i]]
  tl$type[i]      <- file_tbl$type[file_tbl$basename==tl$video[i]]
+ 
+ #### modify to account for more trial sets per video 
  tl$trial_set[i] <- file_tbl$trial_set[file_tbl$basename==tl$video[i]]
    i = i + 1  }
 
@@ -294,17 +295,23 @@ get_animal_pos <- function(trial_limits,animal_track){
    trial_limits$vid_ord[i] <- paste0(trial_limits[i,12],"_",i)
 
   if(radius_criterion=="first_past"){ # if taking 1st point outside radii
-  if(!any(XY$trans_rho > circ0)){warning('NO PTS BEYOND INNER CIRC!!')} 
+  if(!any(XY$trans_rho > circ0)){warning('NO PTS BEYOND INNER CIRC!!')
+  } else if(any(XY$trans_rho<circ0) & # if points either side of circles but not between
+        any(XY$trans_rho>circ1) & !any(XY$trans_rho>circ0 & XY$trans_rho<circ1)){
+  trial_limits$x0[i] <- last(XY$trans_x[XY$trans_rho<circ0]) #get last pts
+  trial_limits$y0[i] <- last(XY$trans_y[XY$trans_rho<circ0]) #in inner circ
+  } else{
   trial_limits$x0[i] <- XY$trans_x[XY$trans_rho >= circ0][1] #get 1st pts 
   trial_limits$y0[i] <- XY$trans_y[XY$trans_rho >= circ0][1] #beyond inner circ
-  # if pts both sides of outer circ
-  if(any(XY$trans_rho <= circ1) & any(XY$trans_rho > circ1)){ 
-    trial_limits$x1[i] <- XY$trans_x[XY$trans_rho >= circ1][1]
-    trial_limits$y1[i] <- XY$trans_y[XY$trans_rho >= circ1][1]
+  }
+  if(any(XY$trans_rho <= circ1) & any(XY$trans_rho > circ1)){ # if pts both sides of outer circ
+    trial_limits$x1[i] <- XY$trans_x[XY$trans_rho >= circ1][1] #first pts beyond
+    trial_limits$y1[i] <- XY$trans_y[XY$trans_rho >= circ1][1] # outer circle
   }else if(!any(XY$trans_rho > circ1)){
     warning(paste("NO POINT BEYOND OUTER RADIUS!!!:",trial_limits$vid_ord[i]))
     trial_limits$x1[i] <- XY$trans_x[which.max(XY$trans_rho)] # get most distant point
     trial_limits$y1[i] <- XY$trans_y[which.max(XY$trans_rho)] # get most distant point
+
   }else{warning(paste("NO POINT WITHIN OUTER RADIUS!!!",trial_limits$vid_ord[i]))
     trial_limits$x1[i] <- XY$trans_x[i+1] # take the 2nd points outside
     trial_limits$y1[i] <- XY$trans_y[i+1] # as x0,y0 will be 1st
@@ -519,7 +526,7 @@ w <- unique(trialz$trial_set) # new variable as we are deleting rows from trials
 while(i <= length(w)){
   if(dim(trialz[trialz$trial_set==w[i],])[1] < 4){
     warning(paste('Fewer than 4 trials in set:',w[i]))
-    trialz$radians[trialz$trial_set==w[i]]         <- NA
+    trialz$radians[trialz$trial_set==w[i]]           <- NA
     trackz_tbl$rel_theta[trackz_tbl$trial_set==w[i]] <- NA
   } else {
   if(dim(trialz[trialz$trial_set==w[i],])[1] > 4){
@@ -528,8 +535,7 @@ while(i <= length(w)){
   i=i+1
 }
 ```
-
-Remove those sets entirely
+Remove those trials entirely
 
 ```{r}
 trialz <- trialz[!is.na(trialz$radians),]
@@ -545,12 +551,10 @@ Are the tracking files all represented in the data spreadsheet?
 # if(any(!df$file %in% file_tbl$basename)){warning("Missing file(s)!")}
 # head(file_tbl)
 
-
 dim(trialz)[1]==dim(df)[1]
 unique(trackz_tbl$trial_set)==unique(trialz$trial_set)
 unique(df$trial_set)==unique(trialz$trial_set)
 unique(trackz_tbl$trial_set)==unique(trialz$trial_set)
-
 ```
 
 
@@ -587,12 +591,6 @@ trackz_tbl     <- subset(trackz_tbl, arc %in% c(0,17,40))
 trialz <- subset(trialz, arc %in% c(0,17,40))
 ```
 
-Drop trialz rows which have a type not derived from df
-
-```{r}
-# <- trialz[!trialz$type=="",]
-```
-
 Make the arc width a factor
 
 ```{r}
@@ -601,6 +599,15 @@ trackz_tbl$arc   <- as.factor(trackz_tbl$arc)
 ```
 
 Make the arc width a factor. This doesn't seem to influence the plotting order and may be redundant.
+
+#### Remove redundant trials
+
+Only the first four valid trials should be used. Check that the positions are correct.
+
+```{r}
+
+```
+
 
 #### Plotting
 
@@ -798,3 +805,38 @@ write_delim(trialz,file = "headings_file.txt",delim = "\t")
 #                             units="radians",zero=pi/2,rotation="clock",
 #                             template="none", modulo="asis")
 ```
+
+#### TROUBLESHOOTING TRIAL NUMBER
+
+There are four trials in every video according to the spreadsheet but this is not true fo the files.
+
+```{r}
+any(table(df$video) != 4)
+table(trialz$video)
+```
+
+For instance, there are two full sets for 3993
+
+```{r}
+trialz$quadrant[trialz$video=="GOPR3993"]
+```
+We can partly check by the angles
+
+```{r}
+round((pi/2)-trialz$radians[trialz$video=="GOPR3993"],2)
+```
+
+#### Which videos are in spreadsheet but not present in tracks
+
+Which videos in the df (Diadema tracks file are not represented in the tracks)
+
+```{r}
+### 
+unique(df$video[which(!df$video %in% trialz$video)])
+```
+Which tracking files are not included in the spreadsheet.
+
+```{r}
+any(!trialz$video %in% df$video)
+```
+
