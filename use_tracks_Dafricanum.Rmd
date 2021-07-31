@@ -161,7 +161,7 @@ With the assignment pipe *%<>%*, the variable is assigned to itself at the end.T
 
 The y values of the landmark and tracks have been reversed to run upwards rather than downwards.
 
-*stim_x_0* and *stim_y_0* are cartesian coords which have there location translated by subtracting the origin and the length scaled to the distance from the origin (and points transformed accordingly).
+*stim_x_0* and *stim_y_0* are cartesian coords which have there location translated by subtracting the origin and the length scaled to the distance from the origin (and points transformed accordingly). Quadrants 1 to 4 are from the top to the right moving 90d clockwise each position.
 
 ```{r}
 get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
@@ -215,13 +215,13 @@ get_trial_limits <- function(landmarks,animal_track,file_tbl,vid_num){ #,
  i=1
  while (i <= num_trials){ 
   if (tl$stim_theta[i] > .25*pi & tl$stim_theta[i] <= .75*pi){
-      tl$quadrant[i] = "top" #if stimulus in first quadrant
+      tl$quadrant[i] <- 1 #"top" #if stimulus in first quadrant
   }else if (tl$stim_theta[i]>= -.25*pi & tl$stim_theta[i] < .25*pi){
-      tl$quadrant[i] = "left"
+      tl$quadrant[i] <- 2#"left"
   }else if (tl$stim_theta[i] >= -.75*pi & tl$stim_theta[i] < -.25*pi ){
-      tl$quadrant[i] = "bottom"
+      tl$quadrant[i] <- 3#"bottom"
   }else {
-      tl$quadrant[i] <- "right" } 
+      tl$quadrant[i] <-4 } #"right"
   i = i + 1
  }
 
@@ -505,6 +505,7 @@ Check which trails are also in df
 trackz_tbl$arc       <- rep(0,dim(trackz_tbl)[1])
 trackz_tbl$type      <- as.character(rep("",dim(trackz_tbl)[1]))
 trackz_tbl$trial_set <- as.character(rep("",dim(trackz_tbl)[1]))
+trialz$pos           <- rep(0,dim(trialz)[1])
 
 i=1
 while(i <= dim(df)[1]){
