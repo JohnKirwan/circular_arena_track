@@ -74,17 +74,18 @@ Obst means obstructed - there was initially an obstacle in the way.
 ```{r}
 df <- read.delim('Diadema_tracks.txt', sep="\t", header = TRUE)
 df %<>% filter(locale=="Tenerife")
+df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
+if(any(table(df$video) != 4)==FALSE){print("All remaining sets have 4 trials")}
+```
+Modify some conditions and show the first rows.
+
+```{r}
 df$locale   <- NULL
 df$species  <- NULL
 df$predator <- NULL
-
-df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
-
 df$type[df$type=="grey control"]       <- "control"
 df$pattern[df$pattern=="grey control"] <- "control"
 df$heading_rad <- mapply(rad_unclock, df$heading_rad)
-#df$heading_rad <- (pi/2) - df$heading_rad # unit circle rotation and zero
-#df$radians[df$radians < 0] <- df$radians[ df$radians < 0] + 2*pi
 df %<>% unite("cond", type:arc, remove = FALSE, sep=" ")
 head(df)
 ```
@@ -510,7 +511,7 @@ while(i <= dim(df)[1]){
  trackz_tbl$arc [which(trackz_tbl$video==df$video[i])] <- df$arc[i]
  trackz_tbl$type[which(trackz_tbl$video==df$video[i])] <- df$type[i]
  trackz_tbl$trial_set[which(trackz_tbl$video==df$video[i])] <- df$trial_set[i]
- i=i+1
+  i=i+1
 }
 
 trackz_tbl %<>% unite("cond",c(type,arc),remove=FALSE, sep=" ")
