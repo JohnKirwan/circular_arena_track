@@ -70,19 +70,20 @@ rad_shepherd_clock <- function(theta){  if(theta < 0){theta <- theta + 2*pi
 
 Obst means obstructed - there was initially an obstacle in the way.
 
-
 ```{r}
 df <- read.delim('Diadema_tracks.txt', sep="\t", header = TRUE)
 df %<>% filter(locale=="Tenerife")
 df %<>% filter(arc %in% c(0,17,40)) #use only conditions in paper
 if(any(table(df$video) != 4)==FALSE){print("All remaining sets have 4 trials")}
 ```
-Modify some conditions and show the first rows.
+The values of arc in the spreadsheet represent the zero mean crossing for the DoG Stimulus, so we change these here to represent the wavelet (period) width. Modify some conditions and show the first rows.
 
 ```{r}
 df$locale   <- NULL
 df$species  <- NULL
 df$predator <- NULL
+df$arc[df$arc==40 & df$type=="DoG"]    <- 69
+df$arc[df$arc==17 & df$type=="DoG"]    <- 29
 df$type[df$type=="grey control"]       <- "control"
 df$pattern[df$pattern=="grey control"] <- "control"
 df$heading_rad <- mapply(rad_unclock, df$heading_rad)
@@ -155,7 +156,7 @@ if(length(landmarks$x) %% 2 == 1){ warning("Odd number of landmarks!") }
 num_trials = length(landmarks$x)/2 
 ```
 
-## The files 
+#### The files 
 
 With the assignment pipe *%<>%*, the variable is assigned to itself at the end.The radius of the circle based on the stimulus distance is *r_px*. atan2 outputs angles in radians according to the unit cicle from -pi to pi.
 
@@ -397,6 +398,7 @@ if(length(idx) > 0){warning(paste("Trial",idx,"has errors!"))
 print(paste(length(all_trackz),"tracks post culling"))
 print(paste(dim(trialz)[1],"trials in limits list post culling"))
 ```
+
 This leaves 10 extra trials not represented in the spreadsheet (df) file.
 
 #### Make tibble for tracks rather than list
@@ -505,7 +507,6 @@ Check which trails are also in df
 trackz_tbl$arc       <- rep(0,dim(trackz_tbl)[1])
 trackz_tbl$type      <- as.character(rep("",dim(trackz_tbl)[1]))
 trackz_tbl$trial_set <- as.character(rep("",dim(trackz_tbl)[1]))
-trialz$pos           <- rep(0,dim(trialz)[1])
 
 i=1
 while(i <= dim(df)[1]){
@@ -589,8 +590,8 @@ trialz$degs <- as.circular(trialz$degs,type="angles",
 Bring over relevant information from df dataframe to other dataframes
 
 ```{r}
-trackz_tbl     <- subset(trackz_tbl, arc %in% c(0,17,40))
-trialz <- subset(trialz, arc %in% c(0,17,40))
+trackz_tbl     <- subset(trackz_tbl, arc %in% c(0,17,29,40,69))
+trialz         <- subset(trialz, arc %in% c(0,17,29,40,69))
 ```
 
 Make the arc width a factor
@@ -607,7 +608,14 @@ Make the arc width a factor. This doesn't seem to influence the plotting order a
 Only the first four valid trials should be used. Check that the positions are correct.
 
 ```{r}
+trialz %>% group_by(trial_set) %>% dplyr::distinct(quadrant, .keep_all = TRUE) -> trialz
+table(trialz$trial_set)
+```
 
+Excise the tracks which don't match the trials
+
+```{r}
+trackz_tbl <- trackz_tbl[trackz_tbl$vid_ord %in% trialz$vid_ord,]
 ```
 
 
@@ -754,11 +762,7 @@ trackz_tbl %>%  #filter(obstacle=="obst") %>%
         strip.background=element_blank(),strip.text=element_blank())
 ```
 
-
-Uncalibrated tracks from the P. lividus adult trials. Each figure panel, represents the experiment arena looking downwards from above. The outer orange circle represents the wall of the arena, with is coloured grey, except for a visual stimulus, graded across the horizon according to a 1st Hermitian wavelet. The darkest part of the stimulus is located at the topmost point of the panel. Within the arena are marked tracks (297 in total), beginning near the centre, which delineate the paths taken by individual animals in trials. In these trials, animals must first negotiate an obstruction at the centre. Each colour corresponds to a given individual (of 50 in total). The points just after the track first crosses each of the two (dashed black and blue) concentric circles near the centre are used to mark a vector (shown with a straight line, dashed for headings directed to the target) to the arena wall. The intersection with the wall (the animal's heading) is shown by a hollow circle and the id of the animal. Animals are oriented in the 45d condition (and to a lesser extent the 60d and 150d condition) indicating that this species can see at a resolution better than 45d but worse than 30d.
-
-
-
+Uncalibrated tracks from the *D. africanum* adult trials. Each figure panel, represents the experiment arena looking downwards from above. The outer orange circle represents the wall of the arena, with is coloured grey, except for a visual stimulus, graded across the horizon according to a 1st Hermitian wavelet. The darkest part of the stimulus is located at the topmost point of the panel. Within the arena are marked tracks (297 in total), beginning near the centre, which delineate the paths taken by individual animals in trials. In these trials, animals must first negotiate an obstruction at the centre. Each colour corresponds to a given individual (of 50 in total). The points just after the track first crosses each of the two (dashed black and blue) concentric circles near the centre are used to mark a vector (shown with a straight line, dashed for headings directed to the target) to the arena wall. The intersection with the wall (the animal's heading) is shown by a hollow circle and the id of the animal. Animals are oriented in the 45d condition (and to a lesser extent the 60d and 150d condition) indicating that this species can see at a resolution better than 45d but worse than 30d.
 
 #### Effect of differing sector sizes
 
@@ -808,25 +812,7 @@ write_delim(trialz,file = "headings_file.txt",delim = "\t")
 #                             template="none", modulo="asis")
 ```
 
-#### TROUBLESHOOTING TRIAL NUMBER
 
-There are four trials in every video according to the spreadsheet but this is not true fo the files.
-
-```{r}
-any(table(df$video) != 4)
-table(trialz$video)
-```
-
-For instance, there are two full sets for 3993
-
-```{r}
-trialz$quadrant[trialz$video=="GOPR3993"]
-```
-We can partly check by the angles
-
-```{r}
-round((pi/2)-trialz$radians[trialz$video=="GOPR3993"],2)
-```
 
 #### Which videos are in spreadsheet but not present in tracks
 
@@ -841,4 +827,9 @@ Which tracking files are not included in the spreadsheet.
 ```{r}
 any(!trialz$video %in% df$video)
 ```
+
+
+
+
+
 
