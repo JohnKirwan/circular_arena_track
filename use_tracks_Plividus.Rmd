@@ -664,6 +664,15 @@ trialz %>% group_by(type,arc,obstacle) %>%
 headings_summ
 ```
 
+```{r}
+deg_labs <- rlang::expr(
+annotate("text", x=0,y=1.1,label="0") +  
+annotate("text", x=1.1,y=0,label="90") +  
+annotate("text", x=0,y=-1.1,label="180") +  
+annotate("text", x=-1.1,y=0,label="270") )
+```
+
+
 A4 size less margins is 9.54 (11.69-1.4-.75) x 7 (8.27-.75-.52) in.
 
 ```{r rel headings fig, fig.height = 9.5, fig.width = 6}
@@ -676,14 +685,22 @@ trackz_tbl %>%  filter(obstacle=="obst") %>%
   geom_path(aes(x=rel_x, y=rel_y, color=id))+#scale_linetype_manual(values=linetypez) +#,size=.5 
   #geom_point(aes(x=rel_x,y=rel_y,group=id,color=id,size=succ5>0))+
  facet_wrap(vars(arc),ncol=2,strip.position="top") +
- annotate("path", color="orange",
+  
+ annotate("path", color="grey",
  x=cos(seq(0,2*pi,length.out=100)),y=sin(seq(0,2*pi,length.out=100))) +
  annotate("path", color="blue",linetype="dashed",
  x=circ1*cos(seq(0,2*pi,length.out=100)),
  y=circ1*sin(seq(0,2*pi,length.out=100))) +
  annotate("path", color="black",linetype="dashed",
- x=circ0*cos(seq(0,2*pi,length.out=100)),
- y=circ0*sin(seq(0,2*pi,length.out=100))) +
+ x=circ0*cos(seq(0,2*pi,length.out=100)),y=circ0*sin(seq(0,2*pi,length.out=100))) +
+ #annotate("text", x=c(1.1,0,-1.1,0),y=c(0,1.1,0,-1.1),label=c("90","0","270","180")) +
+ annotate("text", x=c(1.1,0),y=c(0,1.1),label=c("90","0")) +  
+ 
+annotate("text", x=0,   y=1.1,  label='0') +  
+annotate("text", x=1.1, y=0,    label='90') +  
+annotate("text", x=0,   y=-1.1, label='180') +  
+annotate("text", x=-1.1,y=0,    label='270')
+
  geom_point(data=trialz[ # Stick on final relative headings
   trialz$obstacle=="obst" & as.numeric(trialz$id) <= how_many,],
   aes(x=cos(radians),y=sin(radians),shape=1,color=id),
@@ -709,7 +726,6 @@ trackz_tbl %>%  filter(obstacle=="obst") %>%
         strip.background=element_blank(),strip.text=element_blank())
 ```
 Uncalibrated tracks from the P. lividus adult trials. Each figure panel, represents the experiment arena looking downwards from above. The outer orange circle represents the wall of the arena, with is coloured grey, except for a visual stimulus, graded across the horizon according to a 1st Hermitian wavelet. The darkest part of the stimulus is located at the topmost point of the panel. Within the arena are marked tracks (297 in total), beginning near the centre, which delineate the paths taken by individual animals in trials. In these trials, animals must first negotiate an obstruction at the centre. Each colour corresponds to a given individual (of 50 in total). The points just after the track first crosses each of the two (dashed black and blue) concentric circles near the centre are used to mark a vector (shown with a straight line, dashed for headings directed to the target) to the arena wall. The intersection with the wall (the animal's heading) is shown by a hollow circle and the id of the animal. Animals are oriented in the 45d condition (and to a lesser extent the 60d and 150d condition) indicating that this species can see at a resolution better than 45d but worse than 30d.
-
 
 
 #### Compare relative tracks with and without the obstacle

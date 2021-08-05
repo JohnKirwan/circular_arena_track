@@ -45,6 +45,7 @@ rho2 = results(:,5);                 %rho value of second point
 stimulus = results(:,6);             %theta of stimulus position in video
 stimpos = results(:,7);              %number of stimulus position in video
 
+%%
 T = table(file,theta,degrees,destination,rho1,rho2,stimulus,stimpos);
 writetable(T,'headings.csv','WriteRowNames',true)
 
